@@ -13,11 +13,11 @@ jobs:
       - name: Generate API Docs 🔧
         run: |
           git clone --depth 1 https://github.com/frappe/frappe /opt/frappe
-          python -m venv env
+          python3 -m venv env
           . ./env/bin/activate
-          pip install -e /opt/frappe
-          pip install -e .
-          pip install pdoc
+          pip3 install -e /opt/frappe
+          pip3 install -e .
+          pip3 install pdoc
           pdoc -o build castlecraft
 
       - name: Deploy 🚀
