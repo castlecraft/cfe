@@ -15,10 +15,10 @@ jobs:
           git clone --depth 1 https://github.com/frappe/frappe /opt/frappe
           python3 -m venv env
           . ./env/bin/activate
-          pip3 install wheel
-          pip3 install pdoc
-          pip3 install -e /opt/frappe
-          pip3 install -e .
+          pip3 -q install wheel
+          pip3 -q install pdoc
+          pip3 -q install -e /opt/frappe
+          pip3 -q install -e .
           pdoc -o build castlecraft
 
       - name: Deploy 🚀
