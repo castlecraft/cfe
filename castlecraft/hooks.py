@@ -46,7 +46,7 @@ app_license = "MIT"
 
 # website user home page (by Role)
 # role_home_page = {
-#	"Role": "home_page"
+# 	"Role": "home_page"
 # }
 
 # Generators
@@ -105,7 +105,7 @@ app_license = "MIT"
 # 		"on_update": "method",
 # 		"on_cancel": "method",
 # 		"on_trash": "method"
-#	}
+# 	}
 # }
 
 # Scheduled Tasks
@@ -137,9 +137,9 @@ app_license = "MIT"
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "castlecraft.event.get_events"
-# }
+override_whitelisted_methods = {
+	"frappe.integrations.oauth2.openid_profile": "castlecraft.services.oauth2.openid_profile"
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
@@ -163,24 +163,12 @@ user_data_fields = [
 		"redact_fields": ["{field_1}", "{field_2}"],
 		"partial": 1,
 	},
-	{
-		"doctype": "{doctype_2}",
-		"filter_by": "{filter_by}",
-		"partial": 1,
-	},
-	{
-		"doctype": "{doctype_3}",
-		"strict": False,
-	},
-	{
-		"doctype": "{doctype_4}"
-	}
+	{"doctype": "{doctype_2}", "filter_by": "{filter_by}", "partial": 1,},
+	{"doctype": "{doctype_3}", "strict": False,},
+	{"doctype": "{doctype_4}"},
 ]
 
 # Authentication and authorization
 # --------------------------------
 
-# auth_hooks = [
-# 	"castlecraft.auth.validate"
-# ]
-
+auth_hooks = ["castlecraft.auth.validate"]
