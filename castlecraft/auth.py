@@ -63,7 +63,7 @@ def validate_bearer_with_introspection(token):
 				return
 
 			if auth_header_enabled and client_id and client_secret:
-				auth = (HTTPBasicAuth(client_id, client_secret),)
+				auth = HTTPBasicAuth(client_id, client_secret)
 
 			data = {}
 			data[introspect_token_key] = token
