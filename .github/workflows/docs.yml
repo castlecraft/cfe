@@ -16,9 +16,9 @@ jobs:
           python3 -m venv env
           . ./env/bin/activate
           pip3 install wheel
+          pip3 install pdoc
           pip3 install -e /opt/frappe
           pip3 install -e .
-          pip3 install pdoc
           pdoc -o build castlecraft
 
       - name: Deploy 🚀
