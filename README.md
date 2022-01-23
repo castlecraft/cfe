@@ -36,6 +36,9 @@ Make following changes in `site_config.json` as per your setup:
  "castlecraft_introspect_token_key": "access_token",
  "castlecraft_introspect_url": "https://accounts.example.com/oauth2/introspection",
  "castlecraft_userinfo_url": "https://accounts.example.com/oauth2/profile",
+ "castlecraft_auth_server_url": "https://accounts.example.com",
+ "castlecraft_connected_app": "4fa512fc00",
+ "castlecraft_admin_server_url": "https://admin-server.example.com",
  ...
 }
 ```
@@ -48,6 +51,8 @@ Make following changes in `site_config.json` as per your setup:
 - `castlecraft_introspect_token_key`: Key used to pass token to introspection endpoint. Defaults to `token`. Example request will have `token=abc123`.
 - `castlecraft_introspect_url`: Token introspection url.
 - `castlecraft_userinfo_url`: User info url.
+- `castlecraft_auth_server_url`: Authorization Server url.
+- `castlecraft_admin_server_url`: Admin Server url for tenant management.
 
 ## API Documentation
 
