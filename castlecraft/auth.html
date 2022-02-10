@@ -83,101 +83,121 @@
 
 
 <span class="k">def</span> <span class="nf">validate</span><span class="p">():</span>
-	<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">	Additional validation to execute along with frappe request</span>
-<span class="sd">	&quot;&quot;&quot;</span>
-	<span class="n">authorization_header</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_request_header</span><span class="p">(</span><span class="s2">&quot;Authorization&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">())</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">authorization_header</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-		<span class="n">token</span> <span class="o">=</span> <span class="n">authorization_header</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-		<span class="k">if</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_auth_introspect_bearer_enabled&quot;</span><span class="p">):</span>
-			<span class="n">validate_bearer_with_introspection</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
-		<span class="k">elif</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_auth_jwt_verify_bearer_enabled&quot;</span><span class="p">):</span>
-			<span class="n">validate_bearer_with_jwt_verification</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Additional validation to execute along with frappe request</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">authorization_header</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_request_header</span><span class="p">(</span><span class="s2">&quot;Authorization&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">())</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">authorization_header</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">authorization_header</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_auth_introspect_bearer_enabled&quot;</span><span class="p">):</span>
+            <span class="n">validate_bearer_with_introspection</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_auth_jwt_verify_bearer_enabled&quot;</span><span class="p">):</span>
+            <span class="n">validate_bearer_with_jwt_verification</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">validate_bearer_with_introspection</span><span class="p">(</span><span class="n">token</span><span class="p">):</span>
-	<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">	Validates access_token by using introspection endpoint</span>
-<span class="sd">	Caches the token upto expiry for reuse</span>
-<span class="sd">	&quot;&quot;&quot;</span>
-	<span class="n">is_valid</span> <span class="o">=</span> <span class="kc">False</span>
-	<span class="n">email</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Validates access_token by using introspection endpoint</span>
+<span class="sd">    Caches the token upto expiry for reuse</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">is_valid</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">email</span> <span class="o">=</span> <span class="kc">None</span>
 
-	<span class="n">cached_token</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-	<span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-	<span class="n">form_dict</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">form_dict</span>
-	<span class="n">token_response</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">cached_token</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+    <span class="n">form_dict</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">form_dict</span>
+    <span class="n">token_response</span> <span class="o">=</span> <span class="p">{}</span>
 
-	<span class="k">try</span><span class="p">:</span>
-		<span class="k">if</span> <span class="n">cached_token</span><span class="p">:</span>
-			<span class="n">token_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">cached_token</span><span class="p">)</span>
-			<span class="n">exp</span> <span class="o">=</span> <span class="n">token_json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)</span>
-			<span class="n">email</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="n">token_json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span> <span class="s2">&quot;email&quot;</span><span class="p">)</span>
-			<span class="k">if</span> <span class="n">exp</span><span class="p">:</span>
-				<span class="n">exp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">token_json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)))</span>
-			<span class="k">else</span><span class="p">:</span>
-				<span class="n">exp</span> <span class="o">=</span> <span class="n">now</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cached_token</span><span class="p">:</span>
+            <span class="n">token_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">cached_token</span><span class="p">)</span>
+            <span class="n">exp</span> <span class="o">=</span> <span class="n">token_json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)</span>
+            <span class="n">email</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+                <span class="s2">&quot;User&quot;</span><span class="p">,</span>
+                <span class="n">token_json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_email_key&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">)),</span>
+                <span class="s2">&quot;email&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">exp</span><span class="p">:</span>
+                <span class="n">exp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">token_json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">exp</span> <span class="o">=</span> <span class="n">now</span>
 
-			<span class="k">if</span> <span class="n">now</span> <span class="o">&lt;</span> <span class="n">exp</span> <span class="ow">and</span> <span class="n">email</span><span class="p">:</span>
-				<span class="n">token_response</span> <span class="o">=</span> <span class="n">token_json</span>
-				<span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
-			<span class="k">else</span><span class="p">:</span>
-				<span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">delete_key</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">now</span> <span class="o">&lt;</span> <span class="n">exp</span> <span class="ow">and</span> <span class="n">email</span><span class="p">:</span>
+                <span class="n">token_response</span> <span class="o">=</span> <span class="n">token_json</span>
+                <span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">delete_key</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-		<span class="k">else</span><span class="p">:</span>
-			<span class="n">client_id</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_client_id&quot;</span><span class="p">)</span>
-			<span class="n">client_secret</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_client_secret&quot;</span><span class="p">)</span>
-			<span class="n">introspect_url</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_introspect_url&quot;</span><span class="p">)</span>
-			<span class="n">introspect_token_key</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-				<span class="s2">&quot;castlecraft_introspect_token_key&quot;</span><span class="p">,</span> <span class="s2">&quot;token&quot;</span>
-			<span class="p">)</span>
-			<span class="n">auth_header_enabled</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_auth_header_enabled&quot;</span><span class="p">)</span>
-			<span class="n">auth</span> <span class="o">=</span> <span class="kc">None</span>
-			<span class="k">if</span> <span class="ow">not</span> <span class="n">introspect_url</span><span class="p">:</span>
-				<span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">client_id</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_client_id&quot;</span><span class="p">)</span>
+            <span class="n">client_secret</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_client_secret&quot;</span><span class="p">)</span>
+            <span class="n">introspect_url</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_introspect_url&quot;</span><span class="p">)</span>
+            <span class="n">introspect_token_key</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">&quot;castlecraft_introspect_token_key&quot;</span><span class="p">,</span> <span class="s2">&quot;token&quot;</span>
+            <span class="p">)</span>
+            <span class="n">auth_header_enabled</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">&quot;castlecraft_auth_header_enabled&quot;</span>
+            <span class="p">)</span>
+            <span class="n">auth</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">introspect_url</span><span class="p">:</span>
+                <span class="k">return</span>
 
-			<span class="k">if</span> <span class="n">auth_header_enabled</span> <span class="ow">and</span> <span class="n">client_id</span> <span class="ow">and</span> <span class="n">client_secret</span><span class="p">:</span>
-				<span class="n">auth</span> <span class="o">=</span> <span class="n">HTTPBasicAuth</span><span class="p">(</span><span class="n">client_id</span><span class="p">,</span> <span class="n">client_secret</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">auth_header_enabled</span> <span class="ow">and</span> <span class="n">client_id</span> <span class="ow">and</span> <span class="n">client_secret</span><span class="p">:</span>
+                <span class="n">auth</span> <span class="o">=</span> <span class="n">HTTPBasicAuth</span><span class="p">(</span><span class="n">client_id</span><span class="p">,</span> <span class="n">client_secret</span><span class="p">)</span>
 
-			<span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
-			<span class="n">data</span><span class="p">[</span><span class="n">introspect_token_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">token</span>
-			<span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-				<span class="n">introspect_url</span><span class="p">,</span>
-				<span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
-				<span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span>
-				<span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-www-form-urlencoded&quot;</span><span class="p">},</span>
-			<span class="p">)</span>
-			<span class="n">token_response</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
-			<span class="n">exp</span> <span class="o">=</span> <span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">introspect_token_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">token</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+                <span class="n">introspect_url</span><span class="p">,</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span>
+                <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-www-form-urlencoded&quot;</span><span class="p">},</span>
+            <span class="p">)</span>
+            <span class="n">token_response</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+            <span class="n">exp</span> <span class="o">=</span> <span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)</span>
 
-			<span class="k">if</span> <span class="n">exp</span><span class="p">:</span>
-				<span class="n">exp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)))</span>
-			<span class="k">else</span><span class="p">:</span>
-				<span class="n">exp</span> <span class="o">=</span> <span class="n">now</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;expires_in&quot;</span><span class="p">))</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">exp</span><span class="p">:</span>
+                <span class="n">exp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">exp</span> <span class="o">=</span> <span class="n">now</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span>
+                    <span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;expires_in&quot;</span><span class="p">))</span> <span class="ow">or</span> <span class="mi">0</span>
+                <span class="p">)</span>
 
-			<span class="k">if</span> <span class="n">now</span> <span class="o">&lt;</span> <span class="n">exp</span><span class="p">:</span>
-				<span class="n">email</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span> <span class="s2">&quot;email&quot;</span><span class="p">)</span>
-				<span class="k">if</span> <span class="n">email</span> <span class="ow">and</span> <span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">):</span>
-					<span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
-						<span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">token_response</span><span class="p">),</span> <span class="n">expires_in_sec</span><span class="o">=</span><span class="n">exp</span> <span class="o">-</span> <span class="n">now</span><span class="p">,</span>
-					<span class="p">)</span>
-					<span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">now</span> <span class="o">&lt;</span> <span class="n">exp</span><span class="p">:</span>
+                <span class="n">email</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+                    <span class="s2">&quot;User&quot;</span><span class="p">,</span>
+                    <span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                        <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_email_key&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">)</span>
+                    <span class="p">),</span>
+                    <span class="s2">&quot;email&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">email</span> <span class="ow">and</span> <span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_email_key&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">)</span>
+                <span class="p">):</span>
+                    <span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">token_response</span><span class="p">),</span>
+                        <span class="n">expires_in_sec</span><span class="o">=</span><span class="n">exp</span> <span class="o">-</span> <span class="n">now</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
 
-		<span class="k">if</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-			<span class="s2">&quot;castlecraft_create_user_on_auth_enabled&quot;</span>
-		<span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">frappe</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="n">email</span><span class="p">):</span>
-			<span class="n">user</span> <span class="o">=</span> <span class="n">create_and_save_user</span><span class="p">(</span><span class="n">token_response</span><span class="p">)</span>
-			<span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
-				<span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">token_response</span><span class="p">),</span> <span class="n">expires_in_sec</span><span class="o">=</span><span class="n">exp</span> <span class="o">-</span> <span class="n">now</span><span class="p">,</span>
-			<span class="p">)</span>
-			<span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;castlecraft_create_user_on_auth_enabled&quot;</span>
+        <span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">frappe</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="n">email</span><span class="p">):</span>
+            <span class="n">user</span> <span class="o">=</span> <span class="n">create_and_save_user</span><span class="p">(</span><span class="n">token_response</span><span class="p">)</span>
+            <span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">token_response</span><span class="p">),</span>
+                <span class="n">expires_in_sec</span><span class="o">=</span><span class="n">exp</span> <span class="o">-</span> <span class="n">now</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
 
-		<span class="k">if</span> <span class="n">is_valid</span><span class="p">:</span>
-			<span class="n">frappe</span><span class="o">.</span><span class="n">set_user</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>
-			<span class="n">frappe</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">form_dict</span> <span class="o">=</span> <span class="n">form_dict</span>
+        <span class="k">if</span> <span class="n">is_valid</span><span class="p">:</span>
+            <span class="n">frappe</span><span class="o">.</span><span class="n">set_user</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>
+            <span class="n">frappe</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">form_dict</span> <span class="o">=</span> <span class="n">form_dict</span>
 
-	<span class="k">except</span><span class="p">:</span>
-		<span class="n">frappe</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">(),</span> <span class="s2">&quot;castlecraft_bearer_auth_failed&quot;</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">frappe</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">(),</span> <span class="s2">&quot;castlecraft_bearer_auth_failed&quot;</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">validate_bearer_with_jwt_verification</span><span class="p">(</span><span class="n">token</span><span class="p">):</span>
@@ -188,7 +208,11 @@
         <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
         <span class="n">b64_jwt_header</span><span class="p">,</span> <span class="n">b64_jwt_body</span><span class="p">,</span> <span class="n">b64_jwt_signature</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
         <span class="n">body</span> <span class="o">=</span> <span class="n">get_b64_decoded_json</span><span class="p">(</span><span class="n">b64_jwt_body</span><span class="p">)</span>
-        <span class="n">email</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span> <span class="s2">&quot;email&quot;</span><span class="p">)</span>
+        <span class="n">email</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+            <span class="s2">&quot;User&quot;</span><span class="p">,</span>
+            <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_email_key&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">)),</span>
+            <span class="s2">&quot;email&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="n">cached_token</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cc_jwt|</span><span class="si">{</span><span class="n">email</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">cached_token</span> <span class="ow">and</span> <span class="n">cached_token</span> <span class="o">==</span> <span class="n">token</span><span class="p">:</span>
@@ -216,7 +240,9 @@
                 <span class="p">)</span>
                 <span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
 
-            <span class="k">elif</span> <span class="n">conf</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_create_user_on_auth_enabled&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">):</span>
+            <span class="k">elif</span> <span class="n">conf</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_create_user_on_auth_enabled&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_email_key&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">)</span>
+            <span class="p">):</span>
                 <span class="n">user</span> <span class="o">=</span> <span class="n">create_and_save_user</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
                 <span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;cc_jwt|</span><span class="si">{</span><span class="n">email</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -238,22 +264,22 @@
 
 
 <span class="k">def</span> <span class="nf">create_and_save_user</span><span class="p">(</span><span class="n">body</span><span class="p">):</span>
-	<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">	Create new User and save based on response</span>
-<span class="sd">	&quot;&quot;&quot;</span>
-	<span class="n">user</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">new_doc</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">)</span>
-	<span class="n">user</span><span class="o">.</span><span class="n">email</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">)</span>
-	<span class="n">user</span><span class="o">.</span><span class="n">first_name</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
-	<span class="n">user</span><span class="o">.</span><span class="n">full_name</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;phone_number_verified&quot;</span><span class="p">):</span>
-		<span class="n">user</span><span class="o">.</span><span class="n">phone</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;phone_number&quot;</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create new User and save based on response</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">new_doc</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">)</span>
+    <span class="n">user</span><span class="o">.</span><span class="n">email</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_email_key&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">))</span>
+    <span class="n">user</span><span class="o">.</span><span class="n">first_name</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+    <span class="n">user</span><span class="o">.</span><span class="n">full_name</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;phone_number_verified&quot;</span><span class="p">):</span>
+        <span class="n">user</span><span class="o">.</span><span class="n">phone</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;phone_number&quot;</span><span class="p">)</span>
 
-	<span class="n">user</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">ignore_permissions</span> <span class="o">=</span> <span class="mi">1</span>
-	<span class="n">user</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">no_welcome_mail</span> <span class="o">=</span> <span class="kc">True</span>
-	<span class="n">user</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
-	<span class="n">frappe</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="n">user</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">ignore_permissions</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">user</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">no_welcome_mail</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">user</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+    <span class="n">frappe</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
 
-	<span class="k">return</span> <span class="n">user</span>
+    <span class="k">return</span> <span class="n">user</span>
 
 
 <span class="k">def</span> <span class="nf">get_padded_b64str</span><span class="p">(</span><span class="n">b64string</span><span class="p">):</span>
@@ -298,16 +324,16 @@
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">validate</span><span class="p">():</span>
-	<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">	Additional validation to execute along with frappe request</span>
-<span class="sd">	&quot;&quot;&quot;</span>
-	<span class="n">authorization_header</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_request_header</span><span class="p">(</span><span class="s2">&quot;Authorization&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">())</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">authorization_header</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-		<span class="n">token</span> <span class="o">=</span> <span class="n">authorization_header</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-		<span class="k">if</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_auth_introspect_bearer_enabled&quot;</span><span class="p">):</span>
-			<span class="n">validate_bearer_with_introspection</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
-		<span class="k">elif</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_auth_jwt_verify_bearer_enabled&quot;</span><span class="p">):</span>
-			<span class="n">validate_bearer_with_jwt_verification</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Additional validation to execute along with frappe request</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">authorization_header</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_request_header</span><span class="p">(</span><span class="s2">&quot;Authorization&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">())</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">authorization_header</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">authorization_header</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_auth_introspect_bearer_enabled&quot;</span><span class="p">):</span>
+            <span class="n">validate_bearer_with_introspection</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_auth_jwt_verify_bearer_enabled&quot;</span><span class="p">):</span>
+            <span class="n">validate_bearer_with_jwt_verification</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -328,88 +354,108 @@
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">validate_bearer_with_introspection</span><span class="p">(</span><span class="n">token</span><span class="p">):</span>
-	<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">	Validates access_token by using introspection endpoint</span>
-<span class="sd">	Caches the token upto expiry for reuse</span>
-<span class="sd">	&quot;&quot;&quot;</span>
-	<span class="n">is_valid</span> <span class="o">=</span> <span class="kc">False</span>
-	<span class="n">email</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Validates access_token by using introspection endpoint</span>
+<span class="sd">    Caches the token upto expiry for reuse</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">is_valid</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">email</span> <span class="o">=</span> <span class="kc">None</span>
 
-	<span class="n">cached_token</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-	<span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-	<span class="n">form_dict</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">form_dict</span>
-	<span class="n">token_response</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">cached_token</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+    <span class="n">form_dict</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">form_dict</span>
+    <span class="n">token_response</span> <span class="o">=</span> <span class="p">{}</span>
 
-	<span class="k">try</span><span class="p">:</span>
-		<span class="k">if</span> <span class="n">cached_token</span><span class="p">:</span>
-			<span class="n">token_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">cached_token</span><span class="p">)</span>
-			<span class="n">exp</span> <span class="o">=</span> <span class="n">token_json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)</span>
-			<span class="n">email</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="n">token_json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span> <span class="s2">&quot;email&quot;</span><span class="p">)</span>
-			<span class="k">if</span> <span class="n">exp</span><span class="p">:</span>
-				<span class="n">exp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">token_json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)))</span>
-			<span class="k">else</span><span class="p">:</span>
-				<span class="n">exp</span> <span class="o">=</span> <span class="n">now</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cached_token</span><span class="p">:</span>
+            <span class="n">token_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">cached_token</span><span class="p">)</span>
+            <span class="n">exp</span> <span class="o">=</span> <span class="n">token_json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)</span>
+            <span class="n">email</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+                <span class="s2">&quot;User&quot;</span><span class="p">,</span>
+                <span class="n">token_json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_email_key&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">)),</span>
+                <span class="s2">&quot;email&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">exp</span><span class="p">:</span>
+                <span class="n">exp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">token_json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">exp</span> <span class="o">=</span> <span class="n">now</span>
 
-			<span class="k">if</span> <span class="n">now</span> <span class="o">&lt;</span> <span class="n">exp</span> <span class="ow">and</span> <span class="n">email</span><span class="p">:</span>
-				<span class="n">token_response</span> <span class="o">=</span> <span class="n">token_json</span>
-				<span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
-			<span class="k">else</span><span class="p">:</span>
-				<span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">delete_key</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">now</span> <span class="o">&lt;</span> <span class="n">exp</span> <span class="ow">and</span> <span class="n">email</span><span class="p">:</span>
+                <span class="n">token_response</span> <span class="o">=</span> <span class="n">token_json</span>
+                <span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">delete_key</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-		<span class="k">else</span><span class="p">:</span>
-			<span class="n">client_id</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_client_id&quot;</span><span class="p">)</span>
-			<span class="n">client_secret</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_client_secret&quot;</span><span class="p">)</span>
-			<span class="n">introspect_url</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_introspect_url&quot;</span><span class="p">)</span>
-			<span class="n">introspect_token_key</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-				<span class="s2">&quot;castlecraft_introspect_token_key&quot;</span><span class="p">,</span> <span class="s2">&quot;token&quot;</span>
-			<span class="p">)</span>
-			<span class="n">auth_header_enabled</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_auth_header_enabled&quot;</span><span class="p">)</span>
-			<span class="n">auth</span> <span class="o">=</span> <span class="kc">None</span>
-			<span class="k">if</span> <span class="ow">not</span> <span class="n">introspect_url</span><span class="p">:</span>
-				<span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">client_id</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_client_id&quot;</span><span class="p">)</span>
+            <span class="n">client_secret</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_client_secret&quot;</span><span class="p">)</span>
+            <span class="n">introspect_url</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_introspect_url&quot;</span><span class="p">)</span>
+            <span class="n">introspect_token_key</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">&quot;castlecraft_introspect_token_key&quot;</span><span class="p">,</span> <span class="s2">&quot;token&quot;</span>
+            <span class="p">)</span>
+            <span class="n">auth_header_enabled</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">&quot;castlecraft_auth_header_enabled&quot;</span>
+            <span class="p">)</span>
+            <span class="n">auth</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">introspect_url</span><span class="p">:</span>
+                <span class="k">return</span>
 
-			<span class="k">if</span> <span class="n">auth_header_enabled</span> <span class="ow">and</span> <span class="n">client_id</span> <span class="ow">and</span> <span class="n">client_secret</span><span class="p">:</span>
-				<span class="n">auth</span> <span class="o">=</span> <span class="n">HTTPBasicAuth</span><span class="p">(</span><span class="n">client_id</span><span class="p">,</span> <span class="n">client_secret</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">auth_header_enabled</span> <span class="ow">and</span> <span class="n">client_id</span> <span class="ow">and</span> <span class="n">client_secret</span><span class="p">:</span>
+                <span class="n">auth</span> <span class="o">=</span> <span class="n">HTTPBasicAuth</span><span class="p">(</span><span class="n">client_id</span><span class="p">,</span> <span class="n">client_secret</span><span class="p">)</span>
 
-			<span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
-			<span class="n">data</span><span class="p">[</span><span class="n">introspect_token_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">token</span>
-			<span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-				<span class="n">introspect_url</span><span class="p">,</span>
-				<span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
-				<span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span>
-				<span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-www-form-urlencoded&quot;</span><span class="p">},</span>
-			<span class="p">)</span>
-			<span class="n">token_response</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
-			<span class="n">exp</span> <span class="o">=</span> <span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">introspect_token_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">token</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+                <span class="n">introspect_url</span><span class="p">,</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span>
+                <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-www-form-urlencoded&quot;</span><span class="p">},</span>
+            <span class="p">)</span>
+            <span class="n">token_response</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+            <span class="n">exp</span> <span class="o">=</span> <span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)</span>
 
-			<span class="k">if</span> <span class="n">exp</span><span class="p">:</span>
-				<span class="n">exp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)))</span>
-			<span class="k">else</span><span class="p">:</span>
-				<span class="n">exp</span> <span class="o">=</span> <span class="n">now</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;expires_in&quot;</span><span class="p">))</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">exp</span><span class="p">:</span>
+                <span class="n">exp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">)))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">exp</span> <span class="o">=</span> <span class="n">now</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span>
+                    <span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;expires_in&quot;</span><span class="p">))</span> <span class="ow">or</span> <span class="mi">0</span>
+                <span class="p">)</span>
 
-			<span class="k">if</span> <span class="n">now</span> <span class="o">&lt;</span> <span class="n">exp</span><span class="p">:</span>
-				<span class="n">email</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span> <span class="s2">&quot;email&quot;</span><span class="p">)</span>
-				<span class="k">if</span> <span class="n">email</span> <span class="ow">and</span> <span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">):</span>
-					<span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
-						<span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">token_response</span><span class="p">),</span> <span class="n">expires_in_sec</span><span class="o">=</span><span class="n">exp</span> <span class="o">-</span> <span class="n">now</span><span class="p">,</span>
-					<span class="p">)</span>
-					<span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">now</span> <span class="o">&lt;</span> <span class="n">exp</span><span class="p">:</span>
+                <span class="n">email</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+                    <span class="s2">&quot;User&quot;</span><span class="p">,</span>
+                    <span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                        <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_email_key&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">)</span>
+                    <span class="p">),</span>
+                    <span class="s2">&quot;email&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">email</span> <span class="ow">and</span> <span class="n">token_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_email_key&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">)</span>
+                <span class="p">):</span>
+                    <span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">token_response</span><span class="p">),</span>
+                        <span class="n">expires_in_sec</span><span class="o">=</span><span class="n">exp</span> <span class="o">-</span> <span class="n">now</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
 
-		<span class="k">if</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-			<span class="s2">&quot;castlecraft_create_user_on_auth_enabled&quot;</span>
-		<span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">frappe</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="n">email</span><span class="p">):</span>
-			<span class="n">user</span> <span class="o">=</span> <span class="n">create_and_save_user</span><span class="p">(</span><span class="n">token_response</span><span class="p">)</span>
-			<span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
-				<span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">token_response</span><span class="p">),</span> <span class="n">expires_in_sec</span><span class="o">=</span><span class="n">exp</span> <span class="o">-</span> <span class="n">now</span><span class="p">,</span>
-			<span class="p">)</span>
-			<span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;castlecraft_create_user_on_auth_enabled&quot;</span>
+        <span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">frappe</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="n">email</span><span class="p">):</span>
+            <span class="n">user</span> <span class="o">=</span> <span class="n">create_and_save_user</span><span class="p">(</span><span class="n">token_response</span><span class="p">)</span>
+            <span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;cc_bearer|</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">token_response</span><span class="p">),</span>
+                <span class="n">expires_in_sec</span><span class="o">=</span><span class="n">exp</span> <span class="o">-</span> <span class="n">now</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
 
-		<span class="k">if</span> <span class="n">is_valid</span><span class="p">:</span>
-			<span class="n">frappe</span><span class="o">.</span><span class="n">set_user</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>
-			<span class="n">frappe</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">form_dict</span> <span class="o">=</span> <span class="n">form_dict</span>
+        <span class="k">if</span> <span class="n">is_valid</span><span class="p">:</span>
+            <span class="n">frappe</span><span class="o">.</span><span class="n">set_user</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>
+            <span class="n">frappe</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">form_dict</span> <span class="o">=</span> <span class="n">form_dict</span>
 
-	<span class="k">except</span><span class="p">:</span>
-		<span class="n">frappe</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">(),</span> <span class="s2">&quot;castlecraft_bearer_auth_failed&quot;</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">frappe</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">(),</span> <span class="s2">&quot;castlecraft_bearer_auth_failed&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -438,7 +484,11 @@ Caches the token upto expiry for reuse</p>
         <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
         <span class="n">b64_jwt_header</span><span class="p">,</span> <span class="n">b64_jwt_body</span><span class="p">,</span> <span class="n">b64_jwt_signature</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
         <span class="n">body</span> <span class="o">=</span> <span class="n">get_b64_decoded_json</span><span class="p">(</span><span class="n">b64_jwt_body</span><span class="p">)</span>
-        <span class="n">email</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span> <span class="s2">&quot;email&quot;</span><span class="p">)</span>
+        <span class="n">email</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span>
+            <span class="s2">&quot;User&quot;</span><span class="p">,</span>
+            <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_email_key&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">)),</span>
+            <span class="s2">&quot;email&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="n">cached_token</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cc_jwt|</span><span class="si">{</span><span class="n">email</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">cached_token</span> <span class="ow">and</span> <span class="n">cached_token</span> <span class="o">==</span> <span class="n">token</span><span class="p">:</span>
@@ -466,7 +516,9 @@ Caches the token upto expiry for reuse</p>
                 <span class="p">)</span>
                 <span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
 
-            <span class="k">elif</span> <span class="n">conf</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_create_user_on_auth_enabled&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">):</span>
+            <span class="k">elif</span> <span class="n">conf</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_create_user_on_auth_enabled&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_email_key&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">)</span>
+            <span class="p">):</span>
                 <span class="n">user</span> <span class="o">=</span> <span class="n">create_and_save_user</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
                 <span class="n">frappe</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;cc_jwt|</span><span class="si">{</span><span class="n">email</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -503,22 +555,22 @@ Caches the token upto expiry for reuse</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">create_and_save_user</span><span class="p">(</span><span class="n">body</span><span class="p">):</span>
-	<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">	Create new User and save based on response</span>
-<span class="sd">	&quot;&quot;&quot;</span>
-	<span class="n">user</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">new_doc</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">)</span>
-	<span class="n">user</span><span class="o">.</span><span class="n">email</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">)</span>
-	<span class="n">user</span><span class="o">.</span><span class="n">first_name</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
-	<span class="n">user</span><span class="o">.</span><span class="n">full_name</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
-	<span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;phone_number_verified&quot;</span><span class="p">):</span>
-		<span class="n">user</span><span class="o">.</span><span class="n">phone</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;phone_number&quot;</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create new User and save based on response</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">new_doc</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">)</span>
+    <span class="n">user</span><span class="o">.</span><span class="n">email</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">frappe</span><span class="o">.</span><span class="n">get_conf</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;castlecraft_email_key&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">))</span>
+    <span class="n">user</span><span class="o">.</span><span class="n">first_name</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+    <span class="n">user</span><span class="o">.</span><span class="n">full_name</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;phone_number_verified&quot;</span><span class="p">):</span>
+        <span class="n">user</span><span class="o">.</span><span class="n">phone</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;phone_number&quot;</span><span class="p">)</span>
 
-	<span class="n">user</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">ignore_permissions</span> <span class="o">=</span> <span class="mi">1</span>
-	<span class="n">user</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">no_welcome_mail</span> <span class="o">=</span> <span class="kc">True</span>
-	<span class="n">user</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
-	<span class="n">frappe</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="n">user</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">ignore_permissions</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">user</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">no_welcome_mail</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">user</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+    <span class="n">frappe</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
 
-	<span class="k">return</span> <span class="n">user</span>
+    <span class="k">return</span> <span class="n">user</span>
 </pre></div>
 
         </details>
