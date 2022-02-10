@@ -41,6 +41,7 @@ Make following changes in `site_config.json` as per your setup:
  "castlecraft_connected_app": "4fa512fc00",
  "castlecraft_admin_server_url": "https://admin-server.example.com",
  "castlecraft_jwks_url": "https://accounts.example.com/.well-known/jwks",
+ "castlecraft_email_key": "preferred_username",
  ...
 }
 ```
@@ -57,6 +58,7 @@ Make following changes in `site_config.json` as per your setup:
 - `castlecraft_auth_server_url`: Authorization Server url.
 - `castlecraft_admin_server_url`: Admin Server url for tenant management.
 - `castlecraft_jwks_url`: JWKS URL required in case `castlecraft_auth_jwt_verify_bearer_enabled` is set to `1`
+- `castlecraft_email_key`: OIDC Claim or key to use for getting user's email. Default is `email`.
 
 Note: Either set `castlecraft_auth_introspect_bearer_enabled` or `castlecraft_auth_jwt_verify_bearer_enabled`, NOT both. In case both are set, auth `castlecraft_auth_introspect_bearer_enabled` will be considered.
 
