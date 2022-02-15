@@ -129,7 +129,6 @@ def validate_bearer_with_introspection(token):
 
 def validate_bearer_with_jwt_verification(token):
     is_valid = False
-    conf = frappe.get_conf()
     try:
         form_dict = frappe.local.form_dict
         now = datetime.datetime.now()
@@ -154,7 +153,7 @@ def validate_bearer_with_jwt_verification(token):
 
         if not is_valid:
             frappe.cache().delete_key(f"cc_jwt|{email}")
-            payload = validate_signature(token, conf)
+            payload = validate_signature(token)
 
             if email:
                 frappe.cache().set_value(
@@ -167,7 +166,7 @@ def validate_bearer_with_jwt_verification(token):
                 )
                 is_valid = True
 
-            elif conf.get("castlecraft_create_user_on_auth_enabled") and body.get(
+            elif frappe.get_conf().get("castlecraft_create_user_on_auth_enabled") and body.get(
                 frappe.get_conf().get("castlecraft_email_key", "email")
             ):
                 user = create_and_save_user(body)
@@ -217,8 +216,8 @@ def get_b64_decoded_json(b64str):
     return json.loads(base64.b64decode(get_padded_b64str(b64str)).decode("utf-8"))
 
 
-def validate_signature(token, conf):
-    r = requests.get(conf.get("castlecraft_jwks_url"))
+def validate_signature(token):
+    r = requests.get(frappe.get_conf().get("castlecraft_jwks_url"))
     jwks_keys = r.json()
     keys = jwks_keys.get("keys")
     public_keys = {}
@@ -233,5 +232,5 @@ def validate_signature(token, conf):
         get_padded_b64str(token),
         key=key,
         algorithms=["RS256"],
-        # audience=conf.get("castlecraft_allowed_aud"),
+        audience=frappe.get_conf().get("castlecraft_allowed_aud", []),
     )
