@@ -41,7 +41,7 @@ def validate_bearer_with_introspection(token):
             exp = token_json.get("exp")
             email = frappe.get_value(
                 "User",
-                token_json.get(frappe.get_conf().get("castlecraft_email_key", "email")),
+                get_email_key(token_json),
                 "email",
             )
             if exp:
@@ -93,14 +93,10 @@ def validate_bearer_with_introspection(token):
             if now < exp:
                 email = frappe.get_value(
                     "User",
-                    token_response.get(
-                        frappe.get_conf().get("castlecraft_email_key", "email")
-                    ),
+                    get_email_key(token_response),
                     "email",
                 )
-                if email and token_response.get(
-                    frappe.get_conf().get("castlecraft_email_key", "email")
-                ):
+                if email and get_email_key(token_response):
                     frappe.cache().set_value(
                         f"cc_bearer|{token}",
                         json.dumps(token_response),
@@ -136,7 +132,7 @@ def validate_bearer_with_jwt_verification(token):
         body = get_b64_decoded_json(b64_jwt_body)
         email = frappe.get_value(
             "User",
-            body.get(frappe.get_conf().get("castlecraft_email_key", "email")),
+            get_email_key(body),
             "email",
         )
         cached_token = frappe.cache().get_value(f"cc_jwt|{email}")
@@ -166,9 +162,9 @@ def validate_bearer_with_jwt_verification(token):
                 )
                 is_valid = True
 
-            elif frappe.get_conf().get("castlecraft_create_user_on_auth_enabled") and body.get(
-                frappe.get_conf().get("castlecraft_email_key", "email")
-            ):
+            elif frappe.get_conf().get(
+                "castlecraft_create_user_on_auth_enabled"
+            ) and get_email_key(body):
                 user = create_and_save_user(body)
                 frappe.cache().set_value(
                     f"cc_jwt|{email}",
@@ -194,9 +190,9 @@ def create_and_save_user(body):
     Create new User and save based on response
     """
     user = frappe.new_doc("User")
-    user.email = body.get(frappe.get_conf().get("castlecraft_email_key", "email"))
-    user.first_name = body.get("name")
-    user.full_name = body.get("name")
+    user.email = get_email_key(body)
+    user.first_name = body.get(frappe.get_conf().get("castlecraft_name_key", "name"))
+    user.full_name = body.get(frappe.get_conf().get("castlecraft_name_key", "name"))
     if body.get("phone_number_verified"):
         user.phone = body.get("phone_number")
 
@@ -234,3 +230,10 @@ def validate_signature(token):
         algorithms=["RS256"],
         audience=frappe.get_conf().get("castlecraft_allowed_aud", []),
     )
+
+
+def get_email_key(token: dict):
+    if frappe.get_conf().get("castlecraft_email_key_is_array"):
+        return token.get(frappe.get_conf().get("castlecraft_email_key", "email"))[0]
+    else:
+        return token.get(frappe.get_conf().get("castlecraft_email_key", "email"))

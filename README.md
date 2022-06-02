@@ -17,7 +17,7 @@ After installation of this app, request to frappe app can be made using `access_
 Note: Works on version 13 onwards.
 
 ```shell
-bench get-app castlecraft https://gitlab.com/castlecraft/cfe.git
+bench get-app castlecraft https://github.com/castlecraft/cfe.git
 bench --site <site-name> install-app castlecraft
 ```
 
@@ -42,6 +42,7 @@ Make following changes in `site_config.json` as per your setup:
  "castlecraft_admin_server_url": "https://admin-server.example.com",
  "castlecraft_jwks_url": "https://accounts.example.com/.well-known/jwks",
  "castlecraft_email_key": "preferred_username",
+ "castlecraft_email_key_is_array": 0,
  "castlecraft_allowed_aud": ["8dce6a10-bd61-420c-bee9-9cd9cb6f6a00", "abe31e1c-c6d0-4415-8aa9-ca674685fa00"],
  ...
 }
@@ -60,6 +61,8 @@ Make following changes in `site_config.json` as per your setup:
 - `castlecraft_admin_server_url`: Admin Server url for tenant management.
 - `castlecraft_jwks_url`: JWKS URL required in case `castlecraft_auth_jwt_verify_bearer_enabled` is set to `1`
 - `castlecraft_email_key`: OIDC Claim or key to use for getting user's email. Default is `email`.
+- `castlecraft_name_key`: OIDC Claim or key to use for getting user's full name. Default is `name`.
+- `castlecraft_email_key_is_array`: email key is array and first email from array will be picked.
 - `castlecraft_allowed_aud`: string or array of strings with valid `aud` used to verify `id_token`. Default to empty array `[]`.
 
 Note: Either set `castlecraft_auth_introspect_bearer_enabled` or `castlecraft_auth_jwt_verify_bearer_enabled`, NOT both. In case both are set, auth `castlecraft_auth_introspect_bearer_enabled` will be considered.
