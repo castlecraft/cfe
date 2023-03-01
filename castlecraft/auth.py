@@ -13,19 +13,25 @@ def validate():
     """
     Additional validation to execute along with frappe request
     """
-    authorization_header = frappe.get_request_header("Authorization", str()).split(" ")
+    authorization_header = frappe.get_request_header(
+        "Authorization", ""
+    ).split(  # noqa: E501
+        " "
+    )  # noqa: E501
     if len(authorization_header) == 2:
         token = authorization_header[1]
         if frappe.get_conf().get("castlecraft_auth_introspect_bearer_enabled"):
             validate_bearer_with_introspection(token)
-        elif frappe.get_conf().get("castlecraft_auth_jwt_verify_bearer_enabled"):
+        elif frappe.get_conf().get(
+            "castlecraft_auth_jwt_verify_bearer_enabled"
+        ):  # noqa: E501
             validate_bearer_with_jwt_verification(token)
 
 
 def validate_bearer_with_introspection(token):
     """
     Validates access_token by using introspection endpoint
-    Caches the token upto expiry for reuse
+    Caches the token up to expiry for reuse
     """
     is_valid = False
     email = None
@@ -41,11 +47,22 @@ def validate_bearer_with_introspection(token):
             exp = token_json.get("exp")
             email = frappe.get_value(
                 "User",
-                token_json.get(frappe.get_conf().get("castlecraft_email_key", "email")),
+                token_json.get(
+                    frappe.get_conf().get(
+                        "castlecraft_email_key",
+                        "email",
+                    ),
+                ),
                 "email",
             )
             if exp:
-                exp = datetime.datetime.fromtimestamp(int(token_json.get("exp")))
+                exp = (
+                    datetime.datetime.fromtimestamp(
+                        int(
+                            token_json.get("exp"),
+                        ),
+                    ),
+                )
             else:
                 exp = now
 
@@ -58,7 +75,9 @@ def validate_bearer_with_introspection(token):
         else:
             client_id = frappe.get_conf().get("castlecraft_client_id")
             client_secret = frappe.get_conf().get("castlecraft_client_secret")
-            introspect_url = frappe.get_conf().get("castlecraft_introspect_url")
+            introspect_url = frappe.get_conf().get(
+                "castlecraft_introspect_url"
+            )  # noqa: E501
             introspect_token_key = frappe.get_conf().get(
                 "castlecraft_introspect_token_key", "token"
             )
@@ -84,7 +103,11 @@ def validate_bearer_with_introspection(token):
             exp = token_response.get("exp")
 
             if exp:
-                exp = datetime.datetime.fromtimestamp(int(token_response.get("exp")))
+                exp = datetime.datetime.fromtimestamp(
+                    int(
+                        token_response.get("exp"),
+                    )
+                )
             else:
                 exp = now + datetime.timedelta(
                     0, int(token_response.get("expires_in")) or 0
@@ -111,7 +134,7 @@ def validate_bearer_with_introspection(token):
         if frappe.get_conf().get(
             "castlecraft_create_user_on_auth_enabled"
         ) and not frappe.db.exists("User", email):
-            user = create_and_save_user(token_response)
+            create_and_save_user(token_response)
             frappe.cache().set_value(
                 f"cc_bearer|{token}",
                 json.dumps(token_response),
@@ -123,8 +146,11 @@ def validate_bearer_with_introspection(token):
             frappe.set_user(email)
             frappe.local.form_dict = form_dict
 
-    except:
-        frappe.log_error(traceback.format_exc(), "castlecraft_bearer_auth_failed")
+    except Exception:
+        frappe.log_error(
+            traceback.format_exc(),
+            "castlecraft_bearer_auth_failed",
+        )
 
 
 def validate_bearer_with_jwt_verification(token):
@@ -147,7 +173,7 @@ def validate_bearer_with_jwt_verification(token):
                 cached_b64_jwt_body,
                 cached_b64_jwt_signature,
             ) = cached_token.split(".")
-            cached_body = get_b64_decoded_json(cached_b64_jwt_body)
+            get_b64_decoded_json(cached_b64_jwt_body)
             exp = datetime.datetime.fromtimestamp(int(body.get("exp")))
             is_valid = True if now < exp else False
 
@@ -166,9 +192,11 @@ def validate_bearer_with_jwt_verification(token):
                 )
                 is_valid = True
 
-            elif frappe.get_conf().get("castlecraft_create_user_on_auth_enabled") and body.get(
+            elif frappe.get_conf().get(
+                "castlecraft_create_user_on_auth_enabled"
+            ) and body.get(
                 frappe.get_conf().get("castlecraft_email_key", "email")
-            ):
+            ):  # noqa: E501
                 user = create_and_save_user(body)
                 frappe.cache().set_value(
                     f"cc_jwt|{email}",
@@ -185,7 +213,7 @@ def validate_bearer_with_jwt_verification(token):
             frappe.set_user(email)
             frappe.local.form_dict = form_dict
 
-    except:
+    except Exception:
         frappe.log_error(traceback.format_exc(), "castlecraft_jwt_auth_failed")
 
 
@@ -194,7 +222,9 @@ def create_and_save_user(body):
     Create new User and save based on response
     """
     user = frappe.new_doc("User")
-    user.email = body.get(frappe.get_conf().get("castlecraft_email_key", "email"))
+    user.email = body.get(
+        frappe.get_conf().get("castlecraft_email_key", "email")
+    )  # noqa: E501
     user.first_name = body.get("name")
     user.full_name = body.get("name")
     if body.get("phone_number_verified"):
@@ -213,17 +243,21 @@ def get_padded_b64str(b64string):
 
 
 def get_b64_decoded_json(b64str):
-    return json.loads(base64.b64decode(get_padded_b64str(b64str)).decode("utf-8"))
+    return json.loads(
+        base64.b64decode(get_padded_b64str(b64str)).decode("utf-8")
+    )  # noqa: E501
 
 
 def validate_signature(token):
-    r = requests.get(frappe.get_conf().get("castlecraft_jwks_url"))
+    r = requests.get(frappe.get_conf().get("castlecraft_jwks_url"))  # noqa: E501
     jwks_keys = r.json()
     keys = jwks_keys.get("keys")
     public_keys = {}
     for jwk in keys:
         kid = jwk["kid"]
-        public_keys[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
+        public_keys[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(
+            json.dumps(jwk)
+        )  # noqa: E501
 
     kid = jwt.get_unverified_header(token)["kid"]
     key = public_keys[kid]
