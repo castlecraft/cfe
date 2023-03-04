@@ -52,7 +52,7 @@ def main():
         if not args.dry_run:
             cprint("Writing changes to __init__.py")
             with open(f"{app_name}/__init__.py", "w") as version_file:
-                version_file.write(f"__version__ = '{release}'\n")
+                version_file.write(f'__version__ = "{release}"\n')
 
         repo = git.Repo(os.getcwd())
         git_commit_release_message(repo, release, args.dry_run)
