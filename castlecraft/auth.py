@@ -56,11 +56,9 @@ def validate_bearer_with_introspection(token):
                 "email",
             )
             if exp:
-                exp = (
-                    datetime.datetime.fromtimestamp(
-                        int(
-                            token_json.get("exp"),
-                        ),
+                exp = datetime.datetime.fromtimestamp(
+                    int(
+                        token_json.get("exp"),
                     ),
                 )
             else:
