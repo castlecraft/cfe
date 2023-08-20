@@ -1,0 +1,20 @@
+[project]
+name = "castlecraft"
+authors = [
+  { name = "Castlecraft Ecommerce Pvt. Ltd.", email = "support@castlecraft.in" }
+]
+description = "Castlecraft Frappe Extensions"
+requires-python = ">=3.10"
+readme = "README.md"
+dynamic = ["version"]
+license = { file="license.txt" }
+dependencies = []
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[project.optional-dependencies]
+ci = [
+  "pre-commit==3.0.3",
+]
