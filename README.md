@@ -29,39 +29,51 @@ Make following changes in `site_config.json` as per your setup:
 ```json
 {
  ...
+ // For Introspection
  "castlecraft_auth_header_enabled": 1,
- "castlecraft_auth_jwt_verify_bearer_enabled": 1,
  "castlecraft_auth_introspect_bearer_enabled": 1,
- "castlecraft_client_id": "client_id_or_allowed_aud_claim",
+ "castlecraft_client_id": "client_id",
  "castlecraft_client_secret": "client_secret",
- "castlecraft_create_user_on_auth_enabled": 1,
  "castlecraft_introspect_token_key": "access_token",
  "castlecraft_introspect_url": "https://accounts.example.com/oauth2/introspection",
- "castlecraft_userinfo_url": "https://accounts.example.com/oauth2/profile",
- "castlecraft_auth_server_url": "https://accounts.example.com",
- "castlecraft_connected_app": "4fa512fc00",
- "castlecraft_admin_server_url": "https://admin-server.example.com",
+
+// For id_token verification
+ "castlecraft_auth_jwt_verify_bearer_enabled": 1,
  "castlecraft_jwks_url": "https://accounts.example.com/.well-known/jwks",
+ "castlecraft_allowed_aud": ["client_id_or_allowed_aud_claim", "abe31e1c-c6d0-4415-8aa9-ca674685fa00"],
+
+// Common
+ "castlecraft_create_user_on_auth_enabled": 1,
  "castlecraft_email_key": "preferred_username",
- "castlecraft_allowed_aud": ["8dce6a10-bd61-420c-bee9-9cd9cb6f6a00", "abe31e1c-c6d0-4415-8aa9-ca674685fa00"],
+ "castlecraft_first_name_key": "given_name",
+ "castlecraft_full_name_key": "name",
+ "castlecraft_default_roles": ["Blogger"]
  ...
 }
 ```
 
-- `castlecraft_auth_header_enabled`: When set to `1`, token is introspection endpoint uses basic auth with `client_id` and `client_secret`.
-- `castlecraft_auth_jwt_verify_bearer_enabled`: When set to `1`, token is assumed to be jwt and verified using JWKS.
+### For Introspection
+
 - `castlecraft_auth_introspect_bearer_enabled`: When set to `1`, token is introspected to validate user.
+- `castlecraft_auth_header_enabled`: When set to `1`, token is introspection endpoint uses basic auth with `client_id` and `client_secret`.
 - `castlecraft_client_id`: Registered `client_id`.
 - `castlecraft_client_secret`: Registered `client_secret`.
-- `castlecraft_create_user_on_auth_enabled`: When set to `1`, user with no roles will be created if not found in system.
-- `castlecraft_introspect_token_key`: Key used to pass token to introspection endpoint. Defaults to `token`. Example request will have `token=abc123`.
 - `castlecraft_introspect_url`: Token introspection url.
-- `castlecraft_userinfo_url`: User info url.
-- `castlecraft_auth_server_url`: Authorization Server url.
-- `castlecraft_admin_server_url`: Admin Server url for tenant management.
+- `castlecraft_introspect_token_key`: Key used to pass token to introspection endpoint. Defaults to `token`. Example request will have `token=abc123`.
+
+### For ID Token Verification
+
+- `castlecraft_auth_jwt_verify_bearer_enabled`: When set to `1`, token is assumed to be jwt and verified using JWKS.
 - `castlecraft_jwks_url`: JWKS URL required in case `castlecraft_auth_jwt_verify_bearer_enabled` is set to `1`
-- `castlecraft_email_key`: OIDC Claim or key to use for getting user's email. Default is `email`.
 - `castlecraft_allowed_aud`: string or array of strings with valid `aud` used to verify `id_token`. Default to empty array `[]`.
+
+### Common
+
+- `castlecraft_create_user_on_auth_enabled`: When set to `1`, user with no roles will be created if not found in system.
+- `castlecraft_email_key`: OIDC Claim or key to use for getting user's email. Default is `email`.
+- `castlecraft_first_name_key`: OIDC Claim or key to use for getting user's first name. Default is `given_name`.
+- `castlecraft_full_name_key`: OIDC Claim or key to use for getting user's full name. Default is `name`.
+- `castlecraft_default_roles`: Array of roles to add to user on creation. Default is `[]`.
 
 Note: Either set `castlecraft_auth_introspect_bearer_enabled` or `castlecraft_auth_jwt_verify_bearer_enabled`, NOT both. In case both are set, auth `castlecraft_auth_introspect_bearer_enabled` will be considered.
 

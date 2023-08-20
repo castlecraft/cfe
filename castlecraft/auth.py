@@ -132,7 +132,8 @@ def validate_bearer_with_introspection(token):
         if frappe.get_conf().get(
             "castlecraft_create_user_on_auth_enabled"
         ) and not frappe.db.exists("User", email):
-            create_and_save_user(token_response)
+            user = create_and_save_user(token_response)
+            email = user.email
             frappe.cache().set_value(
                 f"cc_bearer|{token}",
                 json.dumps(token_response),
@@ -219,14 +220,33 @@ def create_and_save_user(body):
     """
     Create new User and save based on response
     """
-    user = frappe.new_doc("User")
-    user.email = body.get(
+    first_name_claim = frappe.get_conf().get(
+        "castlecraft_first_name_key",
+        "given_name",
+    )
+    full_name_claim = frappe.get_conf().get(
+        "castlecraft_full_name_key",
+        "name",
+    )
+    email = body.get(
         frappe.get_conf().get("castlecraft_email_key", "email")
     )  # noqa: E501
-    user.first_name = body.get("name")
-    user.full_name = body.get("name")
+    user = frappe.new_doc("User")
+    user.name = user.email = email
+    user.first_name = body.get(
+        first_name_claim,
+        body.get(
+            full_name_claim,
+            email,
+        ),
+    )
+    user.full_name = body.get(full_name_claim, email)
     if body.get("phone_number_verified"):
         user.phone = body.get("phone_number")
+
+    for role in frappe.get_conf().get("castlecraft_default_roles", []):
+        if frappe.db.get_value("Role", role, "name"):
+            user.append("roles", {"role": role})
 
     user.flags.ignore_permissions = 1
     user.flags.no_welcome_mail = True
