@@ -36,6 +36,8 @@ Make following changes in `site_config.json` as per your setup:
  "castlecraft_client_secret": "client_secret",
  "castlecraft_introspect_token_key": "access_token",
  "castlecraft_introspect_url": "https://accounts.example.com/oauth2/introspection",
+ "castlecraft_fetch_userinfo": 1,
+ "castlecraft_userinfo_url": "https://accounts.example.com/oauth2/profile",
 
 // For id_token verification
  "castlecraft_auth_jwt_verify_bearer_enabled": 1,
@@ -60,6 +62,8 @@ Make following changes in `site_config.json` as per your setup:
 - `castlecraft_client_secret`: Registered `client_secret`.
 - `castlecraft_introspect_url`: Token introspection url.
 - `castlecraft_introspect_token_key`: Key used to pass token to introspection endpoint. Defaults to `token`. Example request will have `token=abc123`.
+- `castlecraft_fetch_userinfo`: If set to `1` user information will be fetched from userinfo instead of introspection response
+- `castlecraft_userinfo_url`: Userinfo url. required if `castlecraft_fetch_userinfo` is used.
 
 ### For ID Token Verification
 
@@ -76,6 +80,10 @@ Make following changes in `site_config.json` as per your setup:
 - `castlecraft_default_roles`: Array of roles to add to user on creation. Default is `[]`.
 
 Note: Either set `castlecraft_auth_introspect_bearer_enabled` or `castlecraft_auth_jwt_verify_bearer_enabled`, NOT both. In case both are set, auth `castlecraft_auth_introspect_bearer_enabled` will be considered.
+
+## Backchannel Logout
+
+Backchannel logout endpoint: `/api/method/castlecraft.services.oauth2.back_channel_logout`. Example: `https://example.com/api/method/castlecraft.services.oauth2.back_channel_logout`
 
 ## API Documentation
 

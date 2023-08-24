@@ -36,7 +36,7 @@ def validate_bearer_with_introspection(token):
     is_valid = False
     email = None
 
-    cached_token = frappe.cache().get_value(f"cc_bearer|{token}")
+    cached_token = get_cached_bearer_token(token)
     now = datetime.datetime.now()
     form_dict = frappe.local.form_dict
     token_response = {}
@@ -68,7 +68,7 @@ def validate_bearer_with_introspection(token):
                 token_response = token_json
                 is_valid = True
             else:
-                frappe.cache().delete_key(f"cc_bearer|{token}")
+                delete_cached_bearer_token(token)
 
         else:
             client_id = frappe.get_conf().get("castlecraft_client_id")
@@ -122,22 +122,38 @@ def validate_bearer_with_introspection(token):
                 if email and token_response.get(
                     frappe.get_conf().get("castlecraft_email_key", "email")
                 ):
-                    frappe.cache().set_value(
-                        f"cc_bearer|{token}",
-                        json.dumps(token_response),
-                        expires_in_sec=exp - now,
+                    cache_bearer_token(token, token_response, exp, now)
+                    cache_user_from_sub(
+                        token_response.get("sub"),
+                        json.dumps({"email": email, "token": token}),
                     )
                     is_valid = True
 
         if frappe.get_conf().get(
             "castlecraft_create_user_on_auth_enabled"
         ) and not frappe.db.exists("User", email):
-            user = create_and_save_user(token_response)
+            user_data = token_response
+
+            if frappe.get_conf().get(
+                "castlecraft_fetch_userinfo"
+            ) and not frappe.db.exists("User", email):
+                userinfo_url = frappe.get_conf().get(
+                    "castlecraft_userinfo_url",
+                )
+                if not userinfo_url:
+                    return
+                r = requests.get(
+                    userinfo_url,
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+                user_data = r.json()
+
+            user = create_and_save_user(user_data)
             email = user.email
-            frappe.cache().set_value(
-                f"cc_bearer|{token}",
-                json.dumps(token_response),
-                expires_in_sec=exp - now,
+            cache_bearer_token(token, token_response, exp, now)
+            cache_user_from_sub(
+                token_response.get("sub"),
+                json.dumps({"email": email, "token": token}),
             )
             is_valid = True
 
@@ -164,7 +180,7 @@ def validate_bearer_with_jwt_verification(token):
             body.get(frappe.get_conf().get("castlecraft_email_key", "email")),
             "email",
         )
-        cached_token = frappe.cache().get_value(f"cc_jwt|{email}")
+        cached_token = get_cached_jwt(email)
 
         if cached_token and cached_token == token:
             (
@@ -172,22 +188,24 @@ def validate_bearer_with_jwt_verification(token):
                 cached_b64_jwt_body,
                 cached_b64_jwt_signature,
             ) = cached_token.split(".")
-            get_b64_decoded_json(cached_b64_jwt_body)
+            body = get_b64_decoded_json(cached_b64_jwt_body)
             exp = datetime.datetime.fromtimestamp(int(body.get("exp")))
             is_valid = True if now < exp else False
 
         if not is_valid:
-            frappe.cache().delete_key(f"cc_jwt|{email}")
+            delete_cached_jwt(email)
             payload = validate_signature(token)
 
             if email:
-                frappe.cache().set_value(
-                    f"cc_jwt|{email}",
+                cache_jwt(
+                    email,
                     token,
-                    expires_in_sec=datetime.datetime.fromtimestamp(
-                        int(payload.get("exp"))
-                    )
-                    - now,
+                    datetime.datetime.fromtimestamp(int(body.get("exp"))),
+                    now,
+                )
+                cache_user_from_sub(
+                    payload.get("sub"),
+                    json.dumps({"email": email, "token": token}),
                 )
                 is_valid = True
 
@@ -197,16 +215,18 @@ def validate_bearer_with_jwt_verification(token):
                 frappe.get_conf().get("castlecraft_email_key", "email")
             ):  # noqa: E501
                 user = create_and_save_user(body)
-                frappe.cache().set_value(
-                    f"cc_jwt|{email}",
+                email = user.email
+                cache_jwt(
+                    email,
                     token,
-                    expires_in_sec=datetime.datetime.fromtimestamp(
-                        int(payload.get("exp"))
-                    )
-                    - now,
+                    datetime.datetime.fromtimestamp(int(payload.get("exp"))),
+                    now,
+                )
+                cache_user_from_sub(
+                    payload.get("sub"),
+                    json.dumps({"email": email, "token": token}),
                 )
                 is_valid = True
-                email = user.email
 
         if is_valid:
             frappe.set_user(email)
@@ -286,3 +306,57 @@ def validate_signature(token):
         algorithms=["RS256"],
         audience=frappe.get_conf().get("castlecraft_allowed_aud", []),
     )
+
+
+def get_cached_bearer_token(token: str):
+    return frappe.cache().get_value(f"cc_bearer|{token}")
+
+
+def get_cached_jwt(email: str):
+    return frappe.cache().get_value(f"cc_jwt|{email}")
+
+
+def get_cached_user_from_sub(sub):
+    payload = None
+    if sub:
+        payload = frappe.cache().get_value(f"cc_sub|{sub}")
+    return json.loads(payload) if payload else {}
+
+
+def cache_user_from_sub(sub: str, payload: str):
+    if sub and payload:
+        frappe.cache().set_value(f"cc_sub|{sub}", payload)
+
+
+def cache_bearer_token(
+    token: str,
+    token_response: dict,
+    exp: datetime,
+    now: datetime,
+):
+    frappe.cache().set_value(
+        f"cc_bearer|{token}",
+        json.dumps(token_response),
+        expires_in_sec=exp - now,
+    )
+
+
+def cache_jwt(
+    email: str,
+    token: str,
+    exp: datetime,
+    now: datetime,
+):
+    frappe.cache().set_value(
+        f"cc_jwt|{email}",
+        token,
+        expires_in_sec=exp - now,
+    )
+
+
+def delete_cached_bearer_token(token: str):
+    frappe.cache().delete_key(f"cc_bearer|{token}")
+
+
+def delete_cached_jwt(email: str):
+    frappe.cache().delete_key(f"cc_jwt|{email}")
