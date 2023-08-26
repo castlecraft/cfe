@@ -33,6 +33,9 @@
             <li>
                     <a class="function" href="#openid_profile">openid_profile</a>
             </li>
+            <li>
+                    <a class="function" href="#back_channel_logout">back_channel_logout</a>
+            </li>
     </ul>
 
 
@@ -54,17 +57,53 @@
 
                         <label class="view-source-button" for="mod-oauth2-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="kn">import</span> <span class="nn">frappe</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">from</span> <span class="nn">frappe.oauth</span> <span class="kn">import</span> <span class="n">get_userinfo</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="nd">@frappe</span><span class="o">.</span><span class="n">whitelist</span><span class="p">()</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="k">def</span> <span class="nf">openid_profile</span><span class="p">():</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="sd">    Overridden userinfo endpoint to validate only session user</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>    <span class="n">user</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_doc</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="n">frappe</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>    <span class="n">frappe</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">response</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">_dict</span><span class="p">(</span><span class="n">get_userinfo</span><span class="p">(</span><span class="n">user</span><span class="p">))</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="kn">import</span> <span class="nn">traceback</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a>
+</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span> <span class="nn">frappe</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="kn">from</span> <span class="nn">frappe.oauth</span> <span class="kn">import</span> <span class="n">get_userinfo</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="kn">from</span> <span class="nn">castlecraft.utils.format</span> <span class="kn">import</span> <span class="n">respond_error</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="kn">from</span> <span class="nn">castlecraft.auth</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># isort: skip</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>    <span class="n">delete_cached_bearer_token</span><span class="p">,</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>    <span class="n">delete_cached_jwt</span><span class="p">,</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>    <span class="n">get_cached_user_from_sub</span><span class="p">,</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>    <span class="n">validate_signature</span><span class="p">,</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="p">)</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="nd">@frappe</span><span class="o">.</span><span class="n">whitelist</span><span class="p">()</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="k">def</span> <span class="nf">openid_profile</span><span class="p">():</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a><span class="sd">    Overridden userinfo endpoint to validate only session user</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>    <span class="n">user</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_doc</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="n">frappe</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>    <span class="n">frappe</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">response</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">_dict</span><span class="p">(</span><span class="n">get_userinfo</span><span class="p">(</span><span class="n">user</span><span class="p">))</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a><span class="nd">@frappe</span><span class="o">.</span><span class="n">whitelist</span><span class="p">(</span><span class="n">allow_guest</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a><span class="k">def</span> <span class="nf">back_channel_logout</span><span class="p">(</span><span class="n">logout_token</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a><span class="sd">    Back channel logout endpoint to logout sub</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>    <span class="n">error_string</span> <span class="o">=</span> <span class="s2">&quot;castlecraft_backchannel_logout_failed&quot;</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">logout_token</span><span class="p">:</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>        <span class="n">respond_error</span><span class="p">(</span><span class="n">error_string</span><span class="p">,</span> <span class="mi">400</span><span class="p">)</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>        <span class="n">verified_token</span> <span class="o">=</span> <span class="n">validate_signature</span><span class="p">(</span><span class="n">logout_token</span><span class="p">)</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>        <span class="k">if</span> <span class="n">verified_token</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sub&quot;</span><span class="p">):</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>            <span class="n">payload</span> <span class="o">=</span> <span class="n">get_cached_user_from_sub</span><span class="p">(</span><span class="n">verified_token</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sub&quot;</span><span class="p">))</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>            <span class="n">email</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">)</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>            <span class="n">token</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;token&quot;</span><span class="p">)</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>            <span class="k">if</span> <span class="n">email</span><span class="p">:</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>                <span class="n">delete_cached_jwt</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>            <span class="k">if</span> <span class="n">token</span><span class="p">:</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>                <span class="n">delete_cached_bearer_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>        <span class="n">frappe</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">(),</span> <span class="n">error_string</span><span class="p">)</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>        <span class="n">respond_error</span><span class="p">(</span><span class="n">error_string</span><span class="p">,</span> <span class="mi">400</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -81,17 +120,60 @@
 
     </div>
     <a class="headerlink" href="#openid_profile"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="openid_profile-6"><a href="#openid_profile-6"><span class="linenos"> 6</span></a><span class="nd">@frappe</span><span class="o">.</span><span class="n">whitelist</span><span class="p">()</span>
-</span><span id="openid_profile-7"><a href="#openid_profile-7"><span class="linenos"> 7</span></a><span class="k">def</span> <span class="nf">openid_profile</span><span class="p">():</span>
-</span><span id="openid_profile-8"><a href="#openid_profile-8"><span class="linenos"> 8</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="openid_profile-9"><a href="#openid_profile-9"><span class="linenos"> 9</span></a><span class="sd">    Overridden userinfo endpoint to validate only session user</span>
-</span><span id="openid_profile-10"><a href="#openid_profile-10"><span class="linenos">10</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="openid_profile-11"><a href="#openid_profile-11"><span class="linenos">11</span></a>    <span class="n">user</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_doc</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="n">frappe</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
-</span><span id="openid_profile-12"><a href="#openid_profile-12"><span class="linenos">12</span></a>    <span class="n">frappe</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">response</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">_dict</span><span class="p">(</span><span class="n">get_userinfo</span><span class="p">(</span><span class="n">user</span><span class="p">))</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="openid_profile-17"><a href="#openid_profile-17"><span class="linenos">17</span></a><span class="nd">@frappe</span><span class="o">.</span><span class="n">whitelist</span><span class="p">()</span>
+</span><span id="openid_profile-18"><a href="#openid_profile-18"><span class="linenos">18</span></a><span class="k">def</span> <span class="nf">openid_profile</span><span class="p">():</span>
+</span><span id="openid_profile-19"><a href="#openid_profile-19"><span class="linenos">19</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="openid_profile-20"><a href="#openid_profile-20"><span class="linenos">20</span></a><span class="sd">    Overridden userinfo endpoint to validate only session user</span>
+</span><span id="openid_profile-21"><a href="#openid_profile-21"><span class="linenos">21</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="openid_profile-22"><a href="#openid_profile-22"><span class="linenos">22</span></a>    <span class="n">user</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_doc</span><span class="p">(</span><span class="s2">&quot;User&quot;</span><span class="p">,</span> <span class="n">frappe</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+</span><span id="openid_profile-23"><a href="#openid_profile-23"><span class="linenos">23</span></a>    <span class="n">frappe</span><span class="o">.</span><span class="n">local</span><span class="o">.</span><span class="n">response</span> <span class="o">=</span> <span class="n">frappe</span><span class="o">.</span><span class="n">_dict</span><span class="p">(</span><span class="n">get_userinfo</span><span class="p">(</span><span class="n">user</span><span class="p">))</span>
 </span></pre></div>
 
 
             <div class="docstring"><p>Overridden userinfo endpoint to validate only session user</p>
+</div>
+
+
+                </section>
+                <section id="back_channel_logout">
+                            <input id="back_channel_logout-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+                    <div class="decorator">@frappe.whitelist(allow_guest=True)</div>
+
+        <span class="def">def</span>
+        <span class="name">back_channel_logout</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">logout_token</span><span class="o">=</span><span class="kc">None</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="back_channel_logout-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#back_channel_logout"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="back_channel_logout-26"><a href="#back_channel_logout-26"><span class="linenos">26</span></a><span class="nd">@frappe</span><span class="o">.</span><span class="n">whitelist</span><span class="p">(</span><span class="n">allow_guest</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="back_channel_logout-27"><a href="#back_channel_logout-27"><span class="linenos">27</span></a><span class="k">def</span> <span class="nf">back_channel_logout</span><span class="p">(</span><span class="n">logout_token</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="back_channel_logout-28"><a href="#back_channel_logout-28"><span class="linenos">28</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="back_channel_logout-29"><a href="#back_channel_logout-29"><span class="linenos">29</span></a><span class="sd">    Back channel logout endpoint to logout sub</span>
+</span><span id="back_channel_logout-30"><a href="#back_channel_logout-30"><span class="linenos">30</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="back_channel_logout-31"><a href="#back_channel_logout-31"><span class="linenos">31</span></a>    <span class="n">error_string</span> <span class="o">=</span> <span class="s2">&quot;castlecraft_backchannel_logout_failed&quot;</span>
+</span><span id="back_channel_logout-32"><a href="#back_channel_logout-32"><span class="linenos">32</span></a>
+</span><span id="back_channel_logout-33"><a href="#back_channel_logout-33"><span class="linenos">33</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">logout_token</span><span class="p">:</span>
+</span><span id="back_channel_logout-34"><a href="#back_channel_logout-34"><span class="linenos">34</span></a>        <span class="n">respond_error</span><span class="p">(</span><span class="n">error_string</span><span class="p">,</span> <span class="mi">400</span><span class="p">)</span>
+</span><span id="back_channel_logout-35"><a href="#back_channel_logout-35"><span class="linenos">35</span></a>
+</span><span id="back_channel_logout-36"><a href="#back_channel_logout-36"><span class="linenos">36</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="back_channel_logout-37"><a href="#back_channel_logout-37"><span class="linenos">37</span></a>        <span class="n">verified_token</span> <span class="o">=</span> <span class="n">validate_signature</span><span class="p">(</span><span class="n">logout_token</span><span class="p">)</span>
+</span><span id="back_channel_logout-38"><a href="#back_channel_logout-38"><span class="linenos">38</span></a>        <span class="k">if</span> <span class="n">verified_token</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sub&quot;</span><span class="p">):</span>
+</span><span id="back_channel_logout-39"><a href="#back_channel_logout-39"><span class="linenos">39</span></a>            <span class="n">payload</span> <span class="o">=</span> <span class="n">get_cached_user_from_sub</span><span class="p">(</span><span class="n">verified_token</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sub&quot;</span><span class="p">))</span>
+</span><span id="back_channel_logout-40"><a href="#back_channel_logout-40"><span class="linenos">40</span></a>            <span class="n">email</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">)</span>
+</span><span id="back_channel_logout-41"><a href="#back_channel_logout-41"><span class="linenos">41</span></a>            <span class="n">token</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;token&quot;</span><span class="p">)</span>
+</span><span id="back_channel_logout-42"><a href="#back_channel_logout-42"><span class="linenos">42</span></a>            <span class="k">if</span> <span class="n">email</span><span class="p">:</span>
+</span><span id="back_channel_logout-43"><a href="#back_channel_logout-43"><span class="linenos">43</span></a>                <span class="n">delete_cached_jwt</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>
+</span><span id="back_channel_logout-44"><a href="#back_channel_logout-44"><span class="linenos">44</span></a>            <span class="k">if</span> <span class="n">token</span><span class="p">:</span>
+</span><span id="back_channel_logout-45"><a href="#back_channel_logout-45"><span class="linenos">45</span></a>                <span class="n">delete_cached_bearer_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+</span><span id="back_channel_logout-46"><a href="#back_channel_logout-46"><span class="linenos">46</span></a>    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+</span><span id="back_channel_logout-47"><a href="#back_channel_logout-47"><span class="linenos">47</span></a>        <span class="n">frappe</span><span class="o">.</span><span class="n">log_error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">(),</span> <span class="n">error_string</span><span class="p">)</span>
+</span><span id="back_channel_logout-48"><a href="#back_channel_logout-48"><span class="linenos">48</span></a>        <span class="n">respond_error</span><span class="p">(</span><span class="n">error_string</span><span class="p">,</span> <span class="mi">400</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Back channel logout endpoint to logout sub</p>
 </div>
 
 
