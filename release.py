@@ -6,7 +6,7 @@ import sys
 from typing import Literal
 
 import git
-import setuptools
+from packaging.version import Version
 
 SemVerType = Literal["major", "minor", "micro"]
 
@@ -61,7 +61,7 @@ def main():
 
 
 def increment_semver(version: str, incr_type: SemVerType):
-    current_version = setuptools.version.pkg_resources.parse_version(version)
+    current_version = Version(version)
     if incr_type == "major":
         return f"{current_version.major + 1}.0.0"  # noqa: E501
     elif incr_type == "minor":
