@@ -162,10 +162,11 @@ def validate_bearer_with_introspection(token):
             frappe.local.form_dict = form_dict
 
     except Exception:
-        frappe.log_error(
-            traceback.format_exc(),
-            "castlecraft_bearer_auth_failed",
-        )
+        if frappe.get_conf().get("castlecraft_enable_log"):
+            frappe.log_error(
+                traceback.format_exc(),
+                "castlecraft_bearer_auth_failed",
+            )
 
 
 def validate_bearer_with_jwt_verification(token):
@@ -233,7 +234,11 @@ def validate_bearer_with_jwt_verification(token):
             frappe.local.form_dict = form_dict
 
     except Exception:
-        frappe.log_error(traceback.format_exc(), "castlecraft_jwt_auth_failed")
+        if frappe.get_conf().get("castlecraft_enable_log"):
+            frappe.log_error(
+                traceback.format_exc(),
+                "castlecraft_jwt_auth_failed",
+            )
 
 
 def create_and_save_user(body):
@@ -263,6 +268,10 @@ def create_and_save_user(body):
     user.full_name = body.get(full_name_claim, email)
     if body.get("phone_number_verified"):
         user.phone = body.get("phone_number")
+
+    username = body.get(frappe.get_conf().get("castlecraft_username_key"))  # noqa: E501
+    if username:
+        user.username = username
 
     for role in frappe.get_conf().get("castlecraft_default_roles", []):
         if frappe.db.get_value("Role", role, "name"):

@@ -49,6 +49,7 @@ Make following changes in `site_config.json` as per your setup:
  "castlecraft_email_key": "preferred_username",
  "castlecraft_first_name_key": "given_name",
  "castlecraft_full_name_key": "name",
+ "castlecraft_username_key": "employee_id",
  "castlecraft_default_roles": ["Blogger"]
  ...
 }
@@ -77,7 +78,9 @@ Make following changes in `site_config.json` as per your setup:
 - `castlecraft_email_key`: OIDC Claim or key to use for getting user's email. Default is `email`.
 - `castlecraft_first_name_key`: OIDC Claim or key to use for getting user's first name. Default is `given_name`.
 - `castlecraft_full_name_key`: OIDC Claim or key to use for getting user's full name. Default is `name`.
+- `castlecraft_username_key`: OIDC Claim or key to use for setting user's `username`. Default is not set.
 - `castlecraft_default_roles`: Array of roles to add to user on creation. Default is `[]`.
+- `castlecraft_enable_log`: If set to `1`, `Error Log` will be created on auth errors.
 
 Note: Either set `castlecraft_auth_introspect_bearer_enabled` or `castlecraft_auth_jwt_verify_bearer_enabled`, NOT both. In case both are set, auth `castlecraft_auth_introspect_bearer_enabled` will be considered.
 
