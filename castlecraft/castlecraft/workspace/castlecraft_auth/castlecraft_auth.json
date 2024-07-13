@@ -1,6 +1,6 @@
 {
   "charts": [],
-  "content": "[{\"id\":\"HahbfxWkml\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Castlecraft Auth</span>\",\"col\":12}},{\"id\":\"w8oIISCZ3m\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cfe Identity Provider\",\"col\":3}}]",
+  "content": "[{\"id\":\"HahbfxWkml\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Castlecraft Auth</span>\",\"col\":12}},{\"id\":\"w8oIISCZ3m\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Identity Provider\",\"col\":3}}]",
   "creation": "2024-07-13 11:13:57.751618",
   "custom_blocks": [],
   "docstatus": 0,
@@ -13,7 +13,7 @@
   "is_hidden": 0,
   "label": "Castlecraft Auth",
   "links": [],
-  "modified": "2024-07-13 12:49:06.201408",
+  "modified": "2024-07-13 21:00:21.448294",
   "modified_by": "Administrator",
   "module": "Castlecraft",
   "name": "Castlecraft Auth",
@@ -32,7 +32,7 @@
     {
       "color": "Grey",
       "doc_view": "List",
-      "label": "Cfe Identity Provider",
+      "label": "Identity Provider",
       "link_to": "CFE Identity Provider",
       "stats_filter": "[]",
       "type": "DocType"
