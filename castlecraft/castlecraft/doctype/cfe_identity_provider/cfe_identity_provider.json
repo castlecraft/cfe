@@ -1,0 +1,222 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "field:idp_name",
+  "creation": "2024-07-13 11:16:47.339495",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "identity_provider_config_section",
+    "idp_name",
+    "enabled",
+    "authorization_type",
+    "cb_idp_0",
+    "first_name_key",
+    "email_key",
+    "full_name_key",
+    "cb_idp_1",
+    "create_user",
+    "user_roles",
+    "introspection_config_section",
+    "auth_header_enabled",
+    "fetch_user_info",
+    "cb_ic_0",
+    "client_id",
+    "client_secret",
+    "token_key",
+    "cb_ic_1",
+    "introspection_endpoint",
+    "profile_endpoint",
+    "jwt_verification_config_section",
+    "jwks_endpoint",
+    "allowed_audience",
+    "user_field_map_section",
+    "user_fields"
+  ],
+  "fields": [
+    {
+      "fieldname": "identity_provider_config_section",
+      "fieldtype": "Section Break",
+      "label": "Identity Provider Config"
+    },
+    {
+      "default": "0",
+      "fieldname": "enabled",
+      "fieldtype": "Check",
+      "label": "Enabled",
+      "search_index": 1
+    },
+    {
+      "default": "Introspection",
+      "fieldname": "authorization_type",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Authorization Type",
+      "options": "Introspection\nJWT Verification",
+      "reqd": 1
+    },
+    {
+      "fieldname": "first_name_key",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "First Name Key",
+      "reqd": 1
+    },
+    {
+      "fieldname": "email_key",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Email Key",
+      "reqd": 1
+    },
+    {
+      "default": "0",
+      "fieldname": "create_user",
+      "fieldtype": "Check",
+      "label": "Create User"
+    },
+    {
+      "collapsible": 1,
+      "depends_on": "eval:doc.authorization_type==='Introspection'",
+      "fieldname": "introspection_config_section",
+      "fieldtype": "Section Break",
+      "label": "Introspection Config"
+    },
+    {
+      "default": "0",
+      "fieldname": "fetch_user_info",
+      "fieldtype": "Check",
+      "label": "Fetch User Info"
+    },
+    {
+      "default": "0",
+      "fieldname": "auth_header_enabled",
+      "fieldtype": "Check",
+      "label": "Auth Header Enabled"
+    },
+    {
+      "fieldname": "client_id",
+      "fieldtype": "Data",
+      "label": "Client ID",
+      "mandatory_depends_on": "eval:doc.auth_header_enabled"
+    },
+    {
+      "fieldname": "client_secret",
+      "fieldtype": "Password",
+      "label": "Client Secret",
+      "mandatory_depends_on": "eval:doc.auth_header_enabled"
+    },
+    {
+      "fieldname": "token_key",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Token Key",
+      "mandatory_depends_on": "eval:doc.authorization_type==='Introspection'"
+    },
+    {
+      "fieldname": "introspection_endpoint",
+      "fieldtype": "Small Text",
+      "label": "Introspection Endpoint",
+      "mandatory_depends_on": "eval:doc.authorization_type==='Introspection'"
+    },
+    {
+      "fieldname": "profile_endpoint",
+      "fieldtype": "Small Text",
+      "label": "Profile Endpoint",
+      "mandatory_depends_on": "eval:doc.fetch_user_info"
+    },
+    {
+      "collapsible": 1,
+      "depends_on": "eval:doc.authorization_type==='JWT Verification'",
+      "fieldname": "jwt_verification_config_section",
+      "fieldtype": "Section Break",
+      "label": "JWT Verification config"
+    },
+    {
+      "fieldname": "jwks_endpoint",
+      "fieldtype": "Small Text",
+      "label": "JWKS Endpoint",
+      "mandatory_depends_on": "eval:doc.authorization_type==='JWT Verification'"
+    },
+    {
+      "fieldname": "cb_idp_0",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "cb_idp_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "cb_ic_0",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "cb_ic_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "allowed_audience",
+      "fieldtype": "Table",
+      "label": "Allowed Audience",
+      "mandatory_depends_on": "eval:doc.authorization_type==='JWT Verification'",
+      "options": "CFE IDP JWT Aud"
+    },
+    {
+      "collapsible": 1,
+      "depends_on": "eval:doc.create_user",
+      "fieldname": "user_field_map_section",
+      "fieldtype": "Section Break",
+      "label": "User Field Map"
+    },
+    {
+      "fieldname": "user_fields",
+      "fieldtype": "Table",
+      "label": "User Fields",
+      "options": "CFE IDP User Claim"
+    },
+    {
+      "fieldname": "idp_name",
+      "fieldtype": "Data",
+      "label": "IDP Name",
+      "unique": 1
+    },
+    {
+      "fieldname": "full_name_key",
+      "fieldtype": "Data",
+      "label": "Full Name Key",
+      "reqd": 1
+    },
+    {
+      "depends_on": "eval:doc.create_user",
+      "fieldname": "user_roles",
+      "fieldtype": "Table MultiSelect",
+      "label": "User Roles",
+      "options": "CFE IDP User Role"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2024-07-13 19:42:38.695792",
+  "modified_by": "Administrator",
+  "module": "Castlecraft",
+  "name": "CFE Identity Provider",
+  "naming_rule": "By fieldname",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

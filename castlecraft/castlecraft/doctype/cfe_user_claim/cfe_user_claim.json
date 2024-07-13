@@ -1,0 +1,61 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "field:user",
+  "creation": "2024-07-13 12:29:25.894731",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": ["user_claims_section", "user", "claims"],
+  "fields": [
+    {
+      "fieldname": "user_claims_section",
+      "fieldtype": "Section Break",
+      "label": "User Claims"
+    },
+    {
+      "fieldname": "user",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "User",
+      "options": "User",
+      "read_only": 1,
+      "reqd": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "claims",
+      "fieldtype": "Table",
+      "label": "Claims",
+      "options": "CFE User Claim Map",
+      "read_only": 1
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2024-07-13 19:49:50.897528",
+  "modified_by": "Administrator",
+  "module": "Castlecraft",
+  "name": "CFE User Claim",
+  "naming_rule": "By fieldname",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "read": 1,
+      "role": "Desk User",
+      "select": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

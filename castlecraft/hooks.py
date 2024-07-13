@@ -10,8 +10,16 @@ app_email = "support@castlecraft.in"
 app_license = "MIT"
 app_version = __version__
 
-override_whitelisted_methods = {
-    "frappe.integrations.oauth2.openid_profile": "castlecraft.services.oauth2.openid_profile"  # noqa: E501
+auth_hooks = ["castlecraft.auth.validate"]
+
+has_permission = {
+    "CFE User Claim": "castlecraft.castlecraft.doctype.cfe_user_claim.cfe_user_claim.has_permission",  # noqa: E501
 }
 
-auth_hooks = ["castlecraft.auth.validate"]
+override_whitelisted_methods = {
+    "frappe.integrations.oauth2.openid_profile": "castlecraft.services.oauth2.openid_profile",  # noqa: E501
+}
+
+permission_query_conditions = {
+    "CFE User Claim": "castlecraft.castlecraft.doctype.cfe_user_claim.cfe_user_claim.get_permission_query_conditions",  # noqa: E501
+}
