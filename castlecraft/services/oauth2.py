@@ -19,7 +19,11 @@ def openid_profile():
     Overridden userinfo endpoint to validate only session user
     """
     user = frappe.get_doc("User", frappe.session.user)
-    frappe.local.response = frappe._dict(get_userinfo(user))
+    userinfo = frappe._dict(get_userinfo(user))
+    user_claim = frappe.get_cached_doc("CFE User Claim", user.name)
+    for claim in user_claim.claims:
+        userinfo[claim.claim] = claim.value
+    frappe.local.response = userinfo
 
 
 @frappe.whitelist(allow_guest=True)

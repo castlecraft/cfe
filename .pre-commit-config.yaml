@@ -60,3 +60,5 @@ repos:
           - eslint-plugin-n
           - eslint-plugin-prefer-arrow
           - eslint-plugin-promise
+          - '@typescript-eslint/eslint-plugin'
+        args: ['--fix']
