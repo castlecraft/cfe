@@ -4,6 +4,7 @@ import frappe
 from frappe.exceptions import DoesNotExistError
 from frappe.oauth import get_userinfo
 
+from castlecraft.auth import get_enabled_idp, get_userinfo_from_idp
 from castlecraft.utils.format import respond_error
 
 from castlecraft.auth import (  # isort: skip
@@ -55,3 +56,49 @@ def back_channel_logout(logout_token=None):
     except Exception:
         frappe.log_error(traceback.format_exc(), error_string)
         respond_error(error_string, 400)
+
+
+@frappe.whitelist(methods=["POST"])
+def sync_claims():
+    """
+    Sync user claims from Identity Provider
+
+    Method: POST
+
+    Parameters: None
+
+    Path: /api/method/castlecraft.services.oauth2.sync_claims
+
+    Error: 403 or 417
+
+    Response: CFE User Claim
+
+    """
+
+    authorization_header = frappe.get_request_header(  # noqa: E501
+        "Authorization", ""
+    ).split(" ")
+
+    if len(authorization_header) == 2:
+        token = authorization_header[1]
+        idp = get_enabled_idp()
+        idp_user_claims = get_userinfo_from_idp(token, idp)
+        idp_claim_map = [field.claim for field in idp.user_fields]
+        claims = []
+        for claim in idp_claim_map:
+            claims.append(
+                {
+                    "claim": claim,
+                    "value": idp_user_claims.get(claim),
+                }
+            )
+
+        user = frappe.get_doc("User", frappe.session.user)
+        user_claim = None
+        try:
+            user_claim = frappe.get_doc("CFE User Claim", user.name)
+        except DoesNotExistError:
+            user_claim = frappe.get_doc({"doctype": "CFE User Claim"})
+        user_claim.set("claims", claims)
+        user_claim.save(ignore_permissions=True)
+        return user_claim.as_dict()

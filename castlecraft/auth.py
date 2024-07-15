@@ -126,11 +126,7 @@ def validate_bearer_with_introspection(token, idp):
             if idp.fetch_user_info:
                 if not idp.profile_endpoint:
                     return
-                r = requests.get(
-                    idp.profile_endpoint,
-                    headers={"Authorization": f"Bearer {token}"},
-                )
-                user_data = r.json()
+                user_data = request_user_info(token, idp)
 
             user = create_and_save_user(user_data, idp)
             email = user.email
@@ -369,3 +365,22 @@ def delete_cached_bearer_token(token: str):
 
 def delete_cached_jwt(email: str):
     frappe.cache().delete_key(f"cc_jwt|{email}")
+
+
+def request_user_info(token, idp=None):
+    if not idp:
+        idp = get_enabled_idp()
+    r = requests.get(
+        idp.profile_endpoint,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    return r.json()
+
+
+def get_userinfo_from_idp(token, idp=None):
+    if not idp:
+        idp = get_enabled_idp()
+    if idp.authorization_type == "Introspection":
+        return request_user_info(token, idp)
+    elif idp.authorization_type == "JWT Verification":
+        return validate_signature(token, idp)
