@@ -1,6 +1,7 @@
 import traceback
 
 import frappe
+from frappe.exceptions import DoesNotExistError
 from frappe.oauth import get_userinfo
 
 from castlecraft.utils.format import respond_error
@@ -20,8 +21,13 @@ def openid_profile():
     """
     user = frappe.get_doc("User", frappe.session.user)
     userinfo = frappe._dict(get_userinfo(user))
-    user_claim = frappe.get_cached_doc("CFE User Claim", user.name)
-    for claim in user_claim.claims:
+    user_claim = {}
+    try:
+        user_claim = frappe.get_cached_doc("CFE User Claim", user.name)
+    except DoesNotExistError:
+        pass
+
+    for claim in user_claim.get("claims", []):
         userinfo[claim.claim] = claim.value
     frappe.local.response = userinfo
 
