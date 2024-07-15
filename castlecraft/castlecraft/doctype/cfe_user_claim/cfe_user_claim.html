@@ -76,7 +76,7 @@
 </span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>
 </span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="k">def</span> <span class="nf">has_permission</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 </span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>    <span class="n">user</span> <span class="o">=</span> <span class="n">user</span> <span class="ow">or</span> <span class="n">frappe</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>    <span class="k">return</span> <span class="n">doc</span><span class="o">.</span><span class="n">user</span> <span class="o">==</span> <span class="n">user</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>    <span class="k">return</span> <span class="n">doc</span><span class="o">.</span><span class="n">user</span> <span class="o">==</span> <span class="n">user</span> <span class="ow">or</span> <span class="s2">&quot;System Manager&quot;</span> <span class="ow">in</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_roles</span><span class="p">()</span>
 </span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>
 </span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>
 </span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="k">def</span> <span class="nf">get_permission_query_conditions</span><span class="p">(</span><span class="n">user</span><span class="p">):</span>
@@ -267,7 +267,7 @@
     <a class="headerlink" href="#has_permission"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="has_permission-13"><a href="#has_permission-13"><span class="linenos">13</span></a><span class="k">def</span> <span class="nf">has_permission</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 </span><span id="has_permission-14"><a href="#has_permission-14"><span class="linenos">14</span></a>    <span class="n">user</span> <span class="o">=</span> <span class="n">user</span> <span class="ow">or</span> <span class="n">frappe</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">user</span>
-</span><span id="has_permission-15"><a href="#has_permission-15"><span class="linenos">15</span></a>    <span class="k">return</span> <span class="n">doc</span><span class="o">.</span><span class="n">user</span> <span class="o">==</span> <span class="n">user</span>
+</span><span id="has_permission-15"><a href="#has_permission-15"><span class="linenos">15</span></a>    <span class="k">return</span> <span class="n">doc</span><span class="o">.</span><span class="n">user</span> <span class="o">==</span> <span class="n">user</span> <span class="ow">or</span> <span class="s2">&quot;System Manager&quot;</span> <span class="ow">in</span> <span class="n">frappe</span><span class="o">.</span><span class="n">get_roles</span><span class="p">()</span>
 </span></pre></div>
 
 
