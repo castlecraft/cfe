@@ -11,7 +11,7 @@ class CFEUserClaim(Document):
 
 def has_permission(doc, user=None):
     user = user or frappe.session.user
-    return doc.user == user
+    return doc.user == user or "System Manager" in frappe.get_roles()
 
 
 def get_permission_query_conditions(user):
