@@ -98,7 +98,12 @@ def sync_claims():
         try:
             user_claim = frappe.get_doc("CFE User Claim", user.name)
         except DoesNotExistError:
-            user_claim = frappe.get_doc({"doctype": "CFE User Claim"})
+            user_claim = frappe.get_doc(
+                {
+                    "doctype": "CFE User Claim",
+                    "user": user.name,
+                }
+            )
         user_claim.set("claims", claims)
         user_claim.save(ignore_permissions=True)
         return user_claim.as_dict()
