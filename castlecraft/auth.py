@@ -14,7 +14,8 @@ def validate():
     """
     Additional validation to execute along with frappe request
     """
-    idp = get_enabled_idp()
+    idp_name = frappe.get_request_header("X-Idp-Name", "")
+    idp = get_idp(idp_name)
     if not idp:
         return
 
@@ -217,12 +218,19 @@ def validate_bearer_with_jwt_verification(token, idp):
             )
 
 
-def get_enabled_idp():
+def get_idp(idp_name=None):
     try:
+        if idp_name:
+            return frappe.get_cached_doc(
+                "CFE Identity Provider",
+                idp_name,
+            )
+
         return frappe.get_last_doc(
             "CFE Identity Provider",
             filters={"enabled": 1},
         )
+
     except DoesNotExistError:
         return None
 
@@ -290,7 +298,7 @@ def get_b64_decoded_json(b64str):
 
 
 def validate_signature(token, idp=None):
-    idp = idp or get_enabled_idp()
+    idp = idp or get_idp()
     allowed_audience = [audience.aud for audience in idp.allowed_audience]
     r = requests.get(idp.jwks_endpoint)
     jwks_keys = r.json()
@@ -369,7 +377,7 @@ def delete_cached_jwt(email: str):
 
 def request_user_info(token, idp=None):
     if not idp:
-        idp = get_enabled_idp()
+        idp = get_idp()
     r = requests.get(
         idp.profile_endpoint,
         headers={"Authorization": f"Bearer {token}"},
@@ -379,7 +387,7 @@ def request_user_info(token, idp=None):
 
 def get_userinfo_from_idp(token, idp=None):
     if not idp:
-        idp = get_enabled_idp()
+        idp = get_idp()
     if idp.authorization_type == "Introspection":
         return request_user_info(token, idp)
     elif idp.authorization_type == "JWT Verification":
