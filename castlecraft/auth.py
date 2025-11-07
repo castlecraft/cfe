@@ -104,23 +104,23 @@ def validate_bearer_with_introspection(token, idp):
                 # If we have an email, check if the user exists.
                 user_exists = frappe.db.exists("User", email_from_token)
 
+                # Determine the final user data
+                user_data = token_response
+                if idp.fetch_user_info and idp.profile_endpoint:
+                    user_data = request_user_info(token, idp)
+
                 if user_exists:
                     email = email_from_token
                     cache_bearer_token(token, token_response, exp, now)
                     cache_user_from_sub(
-                        token_response.get("sub"),
+                        user_data.get("sub"),
                         json.dumps({"email": email, "token": token}),
                     )
                     is_valid = True
                 # If user doesn't exist (or no email in token),
                 # check if we can create one.
                 elif idp.create_user:
-                    # User does not exist, but we can create them.
-                    user_data = token_response
-                    if idp.fetch_user_info:
-                        if idp.profile_endpoint:
-                            user_data = request_user_info(token, idp)
-
+                    # User does not exist, create them using the final user_data
                     user = create_and_save_user(user_data, idp)
                     email = user.email
                     cache_bearer_token(token, token_response, exp, now)
@@ -143,64 +143,79 @@ def validate_bearer_with_introspection(token, idp):
 
 
 def validate_bearer_with_jwt_verification(token, idp):
-    is_valid = False
     try:
         form_dict = frappe.local.form_dict
+        is_valid = False
+        final_email = None
+        payload = None
+
+        # 1. Check for a cached, validated payload using the token itself as the key.
+        cached_payload_str = frappe.cache().get_value(f"cc_jwt_payload|{token}")
         now = datetime.datetime.now()
-        b64_jwt_header, b64_jwt_body, b64_jwt_signature = token.split(".")
-        body = get_b64_decoded_json(b64_jwt_body)
-        email = frappe.get_value(
-            "User",
-            body.get(idp.email_key, "email"),
-            "email",
-        )
-        cached_token = get_cached_jwt(email)
 
-        if cached_token and cached_token == token:
-            (
-                cached_b64_jwt_header,
-                cached_b64_jwt_body,
-                cached_b64_jwt_signature,
-            ) = cached_token.split(".")
-            body = get_b64_decoded_json(cached_b64_jwt_body)
-            exp = datetime.datetime.fromtimestamp(int(body.get("exp")))
-            is_valid = True if now < exp else False
+        if cached_payload_str:
+            cached_payload = json.loads(cached_payload_str)
+            exp = cached_payload.get("exp")
+            if exp and now < datetime.datetime.fromtimestamp(int(exp)):
+                # Cache hit and token is not expired.
+                payload = cached_payload
+            else:
+                # Token is expired, remove from cache.
+                frappe.cache().delete_key(f"cc_jwt_payload|{token}")
 
-        if not is_valid:
-            delete_cached_jwt(email)
+        # For JWT flows, always validate the signature first.
+        if not payload:
+            # 2. Cache miss or expired, perform full validation.
             payload = validate_signature(token, idp)
 
-            if email:
-                cache_jwt(
-                    email,
-                    token,
-                    datetime.datetime.fromtimestamp(int(body.get("exp"))),
-                    now,
-                )
-                cache_user_from_sub(
-                    payload.get("sub"),
-                    json.dumps({"email": email, "token": token}),
-                )
-                is_valid = True
+        # 3. If fetch_user_info is enabled, call the userinfo endpoint to get the final user data.
+        if idp.fetch_user_info and idp.profile_endpoint:
+            user_data = request_user_info(token, idp)
+        else:
+            user_data = payload
 
-            elif idp.create_user and body.get(idp.email_key, "email"):
-                user = create_and_save_user(body, idp)
-                email = user.email
-                cache_jwt(
-                    email,
-                    token,
-                    datetime.datetime.fromtimestamp(int(payload.get("exp"))),
-                    now,
-                )
-                cache_user_from_sub(
-                    payload.get("sub"),
-                    json.dumps({"email": email, "token": token}),
-                )
-                is_valid = True
+        email_from_payload = user_data.get(idp.email_key)
+        if not email_from_payload:
+            # If we can't get an email, we cannot proceed.
+            return
 
-        if is_valid:
-            frappe.set_user(email)
+        user_email = frappe.get_value("User", email_from_payload, "email")
+
+        if user_email:
+            # User exists, log them in.
+            final_email = user_email
+            is_valid = True
+        elif idp.create_user:
+            # User does not exist, but we are allowed to create them.
+            user = create_and_save_user(user_data, idp)
+            final_email = user.email
+            is_valid = True
+        else:
+            # User does not exist, and we are not allowed to create them.
+            is_valid = False
+            final_email = None
+
+        if is_valid and final_email:
+            frappe.set_user(final_email)
             frappe.local.form_dict = form_dict
+
+            # 4. Cache the newly validated payload and other user details.
+            if payload.get("exp"):
+                # Cache the payload against the token for the "fast path".
+                frappe.cache().set_value(
+                    f"cc_jwt_payload|{token}",
+                    json.dumps(payload),
+                    expires_in_sec=datetime.datetime.fromtimestamp(
+                        int(payload.get("exp"))
+                    )
+                    - now,
+                )
+
+            if payload.get("sub"):
+                cache_user_from_sub(
+                    payload.get("sub"),
+                    json.dumps({"email": final_email, "token": token}),
+                )
 
     except Exception:
         if frappe.get_conf().get("castlecraft_enable_log"):
@@ -290,6 +305,7 @@ def get_b64_decoded_json(b64str):
 def validate_signature(token, idp=None):
     idp = idp or get_idp()
     allowed_audience = [audience.aud for audience in idp.allowed_audience]
+    audience_claim_key = idp.audience_claim_key or "aud"
     r = requests.get(idp.jwks_endpoint)
     jwks_keys = r.json()
     keys = jwks_keys.get("keys")
@@ -298,15 +314,30 @@ def validate_signature(token, idp=None):
         kid = jwk["kid"]
         public_keys[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
 
-    kid = jwt.get_unverified_header(token)["kid"]
+    kid = jwt.get_unverified_header(token.encode("utf-8"))["kid"]
     key = public_keys[kid]
 
-    return jwt.decode(
-        get_padded_b64str(token),
+    payload = jwt.decode(
+        token,  # The full JWT token string should be passed directly to jwt.decode
         key=key,
         algorithms=["RS256"],
-        audience=allowed_audience,
+        audience=allowed_audience if audience_claim_key == "aud" else None,
     )
+
+    if audience_claim_key != "aud":
+        claim_value = payload.get(audience_claim_key)
+        if not claim_value:
+            raise jwt.MissingRequiredClaimError(audience_claim_key)
+
+        if isinstance(claim_value, str):
+            claim_value = [claim_value]
+
+        if not any(c in allowed_audience for c in claim_value):
+            raise jwt.InvalidAudienceError(
+                f"Invalid audience. Expected one of {allowed_audience}"
+            )
+
+    return payload
 
 
 def get_cached_bearer_token(token: str):
