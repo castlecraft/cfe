@@ -75,9 +75,7 @@ def sync_claims():
 
     """
 
-    authorization_header = frappe.get_request_header(  # noqa: E501
-        "Authorization", ""
-    ).split(" ")
+    authorization_header = frappe.get_request_header("Authorization", "").split(" ")
 
     if len(authorization_header) == 2:
         token = authorization_header[1]

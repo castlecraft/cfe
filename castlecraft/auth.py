@@ -19,9 +19,7 @@ def validate():
     if not idp:
         return
 
-    authorization_header = frappe.get_request_header(  # noqa: E501
-        "Authorization", ""
-    ).split(" ")
+    authorization_header = frappe.get_request_header("Authorization", "").split(" ")
 
     if len(authorization_header) == 2:
         token = authorization_header[1]
@@ -48,11 +46,7 @@ def validate_bearer_with_introspection(token, idp):
         if cached_token:
             token_json = json.loads(cached_token)
             exp = token_json.get("exp")
-            email = frappe.get_value(
-                "User",
-                token_json.get(idp.email_key),
-                "email",
-            )
+            email = token_json.get(idp.email_key)
             if exp:
                 exp = datetime.datetime.fromtimestamp(
                     int(
@@ -91,52 +85,50 @@ def validate_bearer_with_introspection(token, idp):
             )
             token_response = r.json()
             exp = token_response.get("exp")
-            email = frappe.get_value(
-                "User",
-                token_response.get(idp.email_key),
-                "email",
-            )
+            email_from_token = token_response.get(idp.email_key)
+
             if exp:
                 exp = datetime.datetime.fromtimestamp(
-                    int(
-                        token_response.get("exp"),
-                    )
+                    int(token_response.get("exp")),
                 )
             else:
                 exp = now + datetime.timedelta(
                     0, int(token_response.get("expires_in")) or 0
                 )
 
-            if now < exp:
-                email = frappe.get_value(
-                    "User",
-                    token_response.get(idp.email_key),
-                    "email",
-                )
-                if email and token_response.get(idp.email_key):
+            # Token is valid if it's active and not expired.
+            # It may or may not have an email at this stage.
+            if now < exp and token_response.get("active"):
+                email = None
+
+                # If we have an email, check if the user exists.
+                user_exists = frappe.db.exists("User", email_from_token)
+
+                if user_exists:
+                    email = email_from_token
                     cache_bearer_token(token, token_response, exp, now)
                     cache_user_from_sub(
                         token_response.get("sub"),
                         json.dumps({"email": email, "token": token}),
                     )
                     is_valid = True
+                # If user doesn't exist (or no email in token),
+                # check if we can create one.
+                elif idp.create_user:
+                    # User does not exist, but we can create them.
+                    user_data = token_response
+                    if idp.fetch_user_info:
+                        if idp.profile_endpoint:
+                            user_data = request_user_info(token, idp)
 
-        if idp.create_user and not frappe.db.exists("User", email):
-            user_data = token_response
-
-            if idp.fetch_user_info:
-                if not idp.profile_endpoint:
-                    return
-                user_data = request_user_info(token, idp)
-
-            user = create_and_save_user(user_data, idp)
-            email = user.email
-            cache_bearer_token(token, token_response, exp, now)
-            cache_user_from_sub(
-                token_response.get("sub"),
-                json.dumps({"email": email, "token": token}),
-            )
-            is_valid = True
+                    user = create_and_save_user(user_data, idp)
+                    email = user.email
+                    cache_bearer_token(token, token_response, exp, now)
+                    cache_user_from_sub(
+                        token_response.get("sub"),
+                        json.dumps({"email": email, "token": token}),
+                    )
+                    is_valid = True
 
         if is_valid:
             frappe.set_user(email)
@@ -292,9 +284,7 @@ def get_padded_b64str(b64string):
 
 
 def get_b64_decoded_json(b64str):
-    return json.loads(
-        base64.b64decode(get_padded_b64str(b64str)).decode("utf-8")
-    )  # noqa: E501
+    return json.loads(base64.b64decode(get_padded_b64str(b64str)).decode("utf-8"))
 
 
 def validate_signature(token, idp=None):
@@ -306,9 +296,7 @@ def validate_signature(token, idp=None):
     public_keys = {}
     for jwk in keys:
         kid = jwk["kid"]
-        public_keys[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(
-            json.dumps(jwk)
-        )  # noqa: E501
+        public_keys[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
 
     kid = jwt.get_unverified_header(token)["kid"]
     key = public_keys[kid]
