@@ -13,13 +13,13 @@ app_version = __version__
 auth_hooks = ["castlecraft.auth.validate"]
 
 has_permission = {
-    "CFE User Claim": "castlecraft.castlecraft.doctype.cfe_user_claim.cfe_user_claim.has_permission",  # noqa: E501
+    "CFE User Claim": "castlecraft.castlecraft.doctype.cfe_user_claim.cfe_user_claim.has_permission",
 }
 
 override_whitelisted_methods = {
-    "frappe.integrations.oauth2.openid_profile": "castlecraft.services.oauth2.openid_profile",  # noqa: E501
+    "frappe.integrations.oauth2.openid_profile": "castlecraft.services.oauth2.openid_profile",
 }
 
 permission_query_conditions = {
-    "CFE User Claim": "castlecraft.castlecraft.doctype.cfe_user_claim.cfe_user_claim.get_permission_query_conditions",  # noqa: E501
+    "CFE User Claim": "castlecraft.castlecraft.doctype.cfe_user_claim.cfe_user_claim.get_permission_query_conditions",
 }

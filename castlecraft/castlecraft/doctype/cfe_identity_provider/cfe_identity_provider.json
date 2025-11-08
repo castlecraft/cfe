@@ -17,18 +17,19 @@
     "cb_idp_1",
     "create_user",
     "user_roles",
+    "fetch_user_info",
+    "profile_endpoint",
     "introspection_config_section",
     "auth_header_enabled",
-    "fetch_user_info",
+    "introspection_endpoint",
     "cb_ic_0",
     "client_id",
     "client_secret",
-    "token_key",
     "cb_ic_1",
-    "introspection_endpoint",
-    "profile_endpoint",
+    "token_key",
     "jwt_verification_config_section",
     "jwks_endpoint",
+    "audience_claim_key",
     "allowed_audience",
     "user_field_map_section",
     "user_fields"
@@ -120,6 +121,7 @@
       "mandatory_depends_on": "eval:doc.authorization_type==='Introspection'"
     },
     {
+      "depends_on": "eval:doc.fetch_user_info",
       "fieldname": "profile_endpoint",
       "fieldtype": "Small Text",
       "label": "Profile Endpoint",
@@ -127,6 +129,7 @@
     },
     {
       "collapsible": 1,
+      "default": "aud",
       "depends_on": "eval:doc.authorization_type==='JWT Verification'",
       "fieldname": "jwt_verification_config_section",
       "fieldtype": "Section Break",
@@ -192,11 +195,16 @@
       "fieldtype": "Table MultiSelect",
       "label": "User Roles",
       "options": "CFE IDP User Role"
+    },
+    {
+      "fieldname": "audience_claim_key",
+      "fieldtype": "Data",
+      "label": "Audience Claim Key"
     }
   ],
   "index_web_pages_for_search": 1,
   "links": [],
-  "modified": "2024-07-13 19:42:38.695792",
+  "modified": "2025-11-07 20:35:31.551416",
   "modified_by": "Administrator",
   "module": "Castlecraft",
   "name": "CFE Identity Provider",
@@ -228,6 +236,7 @@
       "write": 1
     }
   ],
+  "row_format": "Dynamic",
   "sort_field": "modified",
   "sort_order": "DESC",
   "states": []

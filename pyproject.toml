@@ -16,5 +16,13 @@ build-backend = "flit_core.buildapi"
 
 [project.optional-dependencies]
 ci = [
-  "pre-commit==3.0.3",
+  "pre-commit>=3.7.0",
+  "pytest==8.4.2",
+  "pytest-mock>=3.14.0",
+]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:datetime.datetime.utcfromtimestamp\\(\\) is deprecated:DeprecationWarning:pytz",
+    "ignore:datetime.datetime.utcfromtimestamp\\(\\) is deprecated:DeprecationWarning:dateutil",
 ]
