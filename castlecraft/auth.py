@@ -37,7 +37,9 @@ def validate_bearer_with_introspection(token, idp):
     is_valid = False
     email = None
 
-    cached_token = get_cached_bearer_token(token)
+    cached_token = None
+    if not idp.get("is_cache_disabled"):
+        cached_token = get_cached_bearer_token(token)
     now = datetime.datetime.now()
     form_dict = frappe.local.form_dict
     token_response = {}
@@ -111,11 +113,12 @@ def validate_bearer_with_introspection(token, idp):
 
                 if user_exists:
                     email = email_from_token
-                    cache_bearer_token(token, token_response, exp, now)
-                    cache_user_from_sub(
-                        user_data.get("sub"),
-                        json.dumps({"email": email, "token": token}),
-                    )
+                    if not idp.get("is_cache_disabled"):
+                        cache_bearer_token(token, token_response, exp, now)
+                        cache_user_from_sub(
+                            user_data.get("sub"),
+                            json.dumps({"email": email, "token": token}),
+                        )
                     is_valid = True
                 # If user doesn't exist (or no email in token),
                 # check if we can create one.
@@ -123,11 +126,12 @@ def validate_bearer_with_introspection(token, idp):
                     # User does not exist, create them using the final user_data
                     user = create_and_save_user(user_data, idp)
                     email = user.email
-                    cache_bearer_token(token, token_response, exp, now)
-                    cache_user_from_sub(
-                        token_response.get("sub"),
-                        json.dumps({"email": email, "token": token}),
-                    )
+                    if not idp.get("is_cache_disabled"):
+                        cache_bearer_token(token, token_response, exp, now)
+                        cache_user_from_sub(
+                            token_response.get("sub"),
+                            json.dumps({"email": email, "token": token}),
+                        )
                     is_valid = True
 
         if is_valid:
@@ -150,7 +154,9 @@ def validate_bearer_with_jwt_verification(token, idp):
         payload = None
 
         # 1. Check for a cached, validated payload using the token itself as the key.
-        cached_payload_str = frappe.cache().get_value(f"cc_jwt_payload|{token}")
+        cached_payload_str = None
+        if not idp.get("is_cache_disabled"):
+            cached_payload_str = frappe.cache().get_value(f"cc_jwt_payload|{token}")
         now = datetime.datetime.now()
 
         if cached_payload_str:
@@ -200,7 +206,7 @@ def validate_bearer_with_jwt_verification(token, idp):
             frappe.local.form_dict = form_dict
 
             # 4. Cache the newly validated payload and other user details.
-            if payload.get("exp"):
+            if payload.get("exp") and not idp.get("is_cache_disabled"):
                 # Cache the payload against the token for the "fast path".
                 frappe.cache().set_value(
                     f"cc_jwt_payload|{token}",
@@ -211,7 +217,7 @@ def validate_bearer_with_jwt_verification(token, idp):
                     - now,
                 )
 
-            if payload.get("sub"):
+            if payload.get("sub") and not idp.get("is_cache_disabled"):
                 cache_user_from_sub(
                     payload.get("sub"),
                     json.dumps({"email": final_email, "token": token}),

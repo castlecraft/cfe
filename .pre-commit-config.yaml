@@ -10,7 +10,7 @@ repos:
       - id: check-added-large-files
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.1
+    rev: v3.21.2
     hooks:
       - id: pyupgrade
         args: [--py37-plus]
@@ -59,7 +59,7 @@ repos:
           - eslint-config-standard
           - eslint-plugin-import
           - eslint-plugin-jsdoc
-          - eslint-plugin-n
+          - eslint-plugin-n@16.6.2
           - eslint-plugin-prefer-arrow
           - eslint-plugin-promise
           - '@typescript-eslint/eslint-plugin'

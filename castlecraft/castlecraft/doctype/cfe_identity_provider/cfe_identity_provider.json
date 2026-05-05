@@ -9,6 +9,7 @@
     "identity_provider_config_section",
     "idp_name",
     "enabled",
+    "is_cache_disabled",
     "authorization_type",
     "cb_idp_0",
     "first_name_key",
@@ -46,6 +47,12 @@
       "fieldtype": "Check",
       "label": "Enabled",
       "search_index": 1
+    },
+    {
+      "default": "0",
+      "fieldname": "is_cache_disabled",
+      "fieldtype": "Check",
+      "label": "Is Cache Disabled"
     },
     {
       "default": "Introspection",
